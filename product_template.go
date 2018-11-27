@@ -421,7 +421,7 @@ Use this field anywhere a small image is required.`},
 	h.ProductTemplate().Methods().PriceCompute().DeclareMethod(
 		`PriceCompute returns the price field defined by priceType in the given uom and currency
 		for the given company.`,
-		func(rs h.ProductTemplateSet, priceType models.FieldNamer, uom h.ProductUomSet, currency h.CurrencySet, company h.CompanySet) {
+		func(rs h.ProductTemplateSet, priceType models.FieldNamer, uom h.ProductUomSet, currency h.CurrencySet, company h.CompanySet) float64 {
 			rs.EnsureOne()
 			template := rs
 			if priceType == h.ProductTemplate().StandardPrice() {
@@ -445,6 +445,7 @@ Use this field anywhere a small image is required.`},
 			if !currency.IsEmpty() {
 				price = template.Currency().Compute(price, currency, true)
 			}
+			return price
 		})
 
 	h.ProductTemplate().Methods().CreateVariants().DeclareMethod(

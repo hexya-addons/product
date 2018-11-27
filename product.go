@@ -551,7 +551,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 						limit2 = 0
 					}
 					products = products.Union(h.ProductProduct().Search(rs.Env(),
-						q.ProductProduct().Name().AddOperator(op, name).And().ID().NotIn(products.Ids())))
+						q.ProductProduct().Name().AddOperator(op, name).And().ID().NotIn(products.Ids()))).Limit(limit2)
 				}
 			case products.IsEmpty() && op.IsNegative():
 				products = h.ProductProduct().Search(rs.Env(),
