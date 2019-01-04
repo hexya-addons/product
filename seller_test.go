@@ -20,13 +20,14 @@ func TestSeller(t *testing.T) {
 			asusTec := h.Partner().NewSet(env).GetRecord("base_res_partner_1")
 			campToCamp := h.Partner().NewSet(env).GetRecord("base_res_partner_12")
 			Convey("Product codes should match context", func() {
-				productService.SetSellers(h.ProductSupplierinfo().Create(env, &h.ProductSupplierinfoData{
-					Name:        asusTec,
-					ProductCode: "ASUCODE",
-				}).Union(h.ProductSupplierinfo().Create(env, &h.ProductSupplierinfoData{
-					Name:        campToCamp,
-					ProductCode: "C2CCODE",
-				})))
+				productService.SetSellers(h.ProductSupplierinfo().Create(env,
+					h.ProductSupplierinfo().NewData().
+						SetName(asusTec).
+						SetProductCode("ASUCODE")).
+					Union(
+						h.ProductSupplierinfo().Create(env, h.ProductSupplierinfo().NewData().
+							SetName(campToCamp).
+							SetProductCode("C2CCODE"))))
 				defaultCode := productService.Code()
 				So(defaultCode, ShouldEqual, "DEFCODE")
 				contextCode := productService.WithContext("partner_id", campToCamp.ID()).Code()

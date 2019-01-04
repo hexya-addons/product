@@ -59,43 +59,40 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 			if rs.Factor() != 0 {
 				factorInv = 1 / rs.Factor()
 			}
-			return &h.ProductUomData{
-				FactorInv: factorInv,
-			}
+			return h.ProductUom().NewData().SetFactorInv(factorInv)
 		})
 
 	h.ProductUom().Methods().OnchangeUomType().DeclareMethod(
 		`OnchangeUomType updates factor when the UoM type is changed`,
-		func(rs h.ProductUomSet) (*h.ProductUomData, []models.FieldNamer) {
+		func(rs h.ProductUomSet) *h.ProductUomData {
+			res := h.ProductUom().NewData()
 			if rs.UomType() == "reference" {
-				return &h.ProductUomData{
-					Factor: 1,
-				}, []models.FieldNamer{h.ProductUom().Factor()}
+				res.SetFactor(1)
 			}
-			return new(h.ProductUomData), []models.FieldNamer{}
+			return res
 
 		})
 
 	h.ProductUom().Methods().Create().Extend("",
-		func(rs h.ProductUomSet, data *h.ProductUomData, fieldsToReset ...models.FieldNamer) h.ProductUomSet {
-			if data.FactorInv != 0 {
-				data.Factor = 1 / data.FactorInv
-				data.FactorInv = 0
+		func(rs h.ProductUomSet, data *h.ProductUomData) h.ProductUomSet {
+			if data.FactorInv() != 0 {
+				data.SetFactor(1 / data.FactorInv())
+				data.SetFactorInv(0)
 			}
 			return rs.Super().Create(data)
 		})
 
 	h.ProductUom().Methods().Write().Extend("",
-		func(rs h.ProductUomSet, vals *h.ProductUomData, fieldsToReset ...models.FieldNamer) bool {
-			if factorInv, exists := vals.Get(h.ProductUom().FactorInv(), fieldsToReset...); exists {
+		func(rs h.ProductUomSet, vals *h.ProductUomData) bool {
+			if vals.HasFactorInv() {
 				var factor float64
-				if factorInv != 0 {
-					factor = 1 / factorInv.(float64)
+				if vals.FactorInv() != 0 {
+					factor = 1 / vals.FactorInv()
 				}
-				vals.Factor = factor
-				vals.FactorInv = 0
+				vals.SetFactor(factor)
+				vals.SetFactorInv(0)
 			}
-			return rs.Super().Write(vals, fieldsToReset...)
+			return rs.Super().Write(vals)
 		})
 
 	h.ProductUom().Methods().ComputeQuantity().DeclareMethod(

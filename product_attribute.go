@@ -63,9 +63,7 @@ func init() {
 				price := rs.Prices().Search(q.ProductAttributePrice().ProductTmpl().Equals(productTmpl))
 				priceExtra = price.PriceExtra()
 			}
-			return &h.ProductAttributeValueData{
-				PriceExtra: priceExtra,
-			}
+			return h.ProductAttributeValue().NewData().SetPriceExtra(priceExtra)
 		})
 
 	h.ProductAttributeValue().Methods().InversePriceExtra().DeclareMethod(
@@ -87,11 +85,10 @@ func init() {
 				updated = updated.Union(price.Value())
 			}
 			for _, val := range rs.Subtract(updated).Records() {
-				h.ProductAttributePrice().Create(rs.Env(), &h.ProductAttributePriceData{
-					ProductTmpl: productTmpl,
-					Value:       val,
-					PriceExtra:  value,
-				})
+				h.ProductAttributePrice().Create(rs.Env(), h.ProductAttributePrice().NewData().
+					SetProductTmpl(productTmpl).
+					SetValue(val).
+					SetPriceExtra(value))
 			}
 		})
 
@@ -162,9 +159,8 @@ You are trying to delete an attribute value with a reference on a product varian
 			for _, value := range rs.Values().Records() {
 				values = append(values, value.Name())
 			}
-			return &h.ProductAttributeLineData{
-				Name: rs.Attribute().Name() + ": " + strings.Join(values, ", "),
-			}
+			return h.ProductAttributeLine().NewData().
+				SetName(rs.Attribute().Name() + ": " + strings.Join(values, ", "))
 		})
 
 	h.ProductAttributeLine().Methods().CheckValidAttribute().DeclareMethod(

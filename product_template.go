@@ -152,9 +152,8 @@ Use this field anywhere a small image is required.`},
 	h.ProductTemplate().Methods().ComputeProductVariant().DeclareMethod(
 		`ComputeProductVariant returns the first variant of this template`,
 		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
-			return &h.ProductTemplateData{
-				ProductVariant: rs.ProductVariants().Records()[0],
-			}
+			return h.ProductTemplate().NewData().
+				SetProductVariant(rs.ProductVariants().Records()[0])
 		})
 
 	h.ProductTemplate().Methods().ComputeCurrency().DeclareMethod(
@@ -169,9 +168,7 @@ Use this field anywhere a small image is required.`},
 			if !rs.Company().Sudo().Currency().IsEmpty() {
 				currency = rs.Company().Sudo().Currency()
 			}
-			return &h.ProductTemplateData{
-				Currency: currency,
-			}
+			return h.ProductTemplate().NewData().SetCurrency(currency)
 		})
 
 	h.ProductTemplate().Methods().ComputeTemplatePrice().DeclareMethod(
@@ -195,9 +192,8 @@ Use this field anywhere a small image is required.`},
 			if quantity == 0 {
 				quantity = 1
 			}
-			return &h.ProductTemplateData{
-				Price: priceList.GetProductPrice(rs.ProductVariant(), quantity, partner, dates.Today(), h.ProductUom().NewSet(rs.Env())),
-			}
+			return h.ProductTemplate().NewData().
+				SetPrice(priceList.GetProductPrice(rs.ProductVariant(), quantity, partner, dates.Today(), h.ProductUom().NewSet(rs.Env())))
 		})
 
 	h.ProductTemplate().Methods().InverseTemplatePrice().DeclareMethod(
@@ -216,11 +212,10 @@ Use this field anywhere a small image is required.`},
 		`ComputeStandardPrice returns the standard price for this template`,
 		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
 			if rs.ProductVariants().Len() == 1 {
-				return &h.ProductTemplateData{
-					StandardPrice: rs.ProductVariant().StandardPrice(),
-				}
+				return h.ProductTemplate().NewData().
+					SetStandardPrice(rs.ProductVariant().StandardPrice())
 			}
-			return new(h.ProductTemplateData)
+			return h.ProductTemplate().NewData()
 		})
 
 	h.ProductTemplate().Methods().InverseStandardPrice().DeclareMethod(
@@ -235,11 +230,10 @@ Use this field anywhere a small image is required.`},
 		`ComputeVolume compute the volume of this template`,
 		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
 			if rs.ProductVariants().Len() == 1 {
-				return &h.ProductTemplateData{
-					Volume: rs.ProductVariant().Volume(),
-				}
+				return h.ProductTemplate().NewData().
+					SetVolume(rs.ProductVariant().Volume())
 			}
-			return new(h.ProductTemplateData)
+			return h.ProductTemplate().NewData()
 		})
 
 	h.ProductTemplate().Methods().InverseVolume().DeclareMethod(
@@ -254,11 +248,10 @@ Use this field anywhere a small image is required.`},
 		`ComputeWeight compute the weight of this template`,
 		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
 			if rs.ProductVariants().Len() == 1 {
-				return &h.ProductTemplateData{
-					Weight: rs.ProductVariant().Weight(),
-				}
+				return h.ProductTemplate().NewData().
+					SetWeight(rs.ProductVariant().Weight())
 			}
-			return new(h.ProductTemplateData)
+			return h.ProductTemplate().NewData()
 		})
 
 	h.ProductTemplate().Methods().InverseWeight().DeclareMethod(
@@ -272,20 +265,18 @@ Use this field anywhere a small image is required.`},
 	h.ProductTemplate().Methods().ComputeProductVariantCount().DeclareMethod(
 		`ComputeProductVariantCount returns the number of variants for this template`,
 		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
-			return &h.ProductTemplateData{
-				ProductVariantCount: rs.ProductVariants().Len(),
-			}
+			return h.ProductTemplate().NewData().
+				SetProductVariantCount(rs.ProductVariants().Len())
 		})
 
 	h.ProductTemplate().Methods().ComputeDefaultCode().DeclareMethod(
 		`ComputeDefaultCode returns the default code for this template`,
 		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+			res := h.ProductTemplate().NewData()
 			if rs.ProductVariants().Len() == 1 {
-				return &h.ProductTemplateData{
-					DefaultCode: rs.ProductVariant().DefaultCode(),
-				}
+				res.SetDefaultCode(rs.ProductVariant().DefaultCode())
 			}
-			return new(h.ProductTemplateData)
+			return res
 		})
 
 	h.ProductTemplate().Methods().InverseDefaultCode().DeclareMethod(
@@ -306,79 +297,81 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().OnchangeUom().DeclareMethod(
 		`OnchangeUom updates UomPo when uom is changed`,
-		func(rs h.ProductTemplateSet) (*h.ProductTemplateData, []models.FieldNamer) {
+		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+			res := h.ProductTemplate().NewData()
 			if !rs.Uom().IsEmpty() {
-				return &h.ProductTemplateData{
-					UomPo: rs.Uom(),
-				}, []models.FieldNamer{h.ProductTemplate().UomPo()}
+				res.SetUomPo(rs.Uom())
 			}
-			return new(h.ProductTemplateData), []models.FieldNamer{}
+			return res
 		})
 
 	h.ProductTemplate().Methods().ResizeImageData().DeclareMethod(
 		`ResizeImageData returns the given data struct with images set for the different sizes.`,
-		func(set h.ProductTemplateSet, data *h.ProductTemplateData) *h.ProductTemplateData {
+		func(set h.ProductTemplateSet, data *h.ProductTemplateData) {
 			switch {
-			case data.Image != "":
-				data.Image = b64image.Resize(data.Image, 1024, 1024, true)
-				data.ImageMedium = b64image.Resize(data.Image, 128, 128, false)
-				data.ImageSmall = b64image.Resize(data.Image, 64, 64, false)
-			case data.ImageMedium != "":
-				data.Image = b64image.Resize(data.ImageMedium, 1024, 1024, true)
-				data.ImageMedium = b64image.Resize(data.ImageMedium, 128, 128, true)
-				data.ImageSmall = b64image.Resize(data.ImageMedium, 64, 64, false)
-			case data.ImageSmall != "":
-				data.Image = b64image.Resize(data.ImageSmall, 1024, 1024, true)
-				data.ImageMedium = b64image.Resize(data.ImageSmall, 128, 128, true)
-				data.ImageSmall = b64image.Resize(data.ImageSmall, 64, 64, true)
+			case data.Image() != "":
+				data.SetImage(b64image.Resize(data.Image(), 1024, 1024, true))
+				data.SetImageMedium(b64image.Resize(data.Image(), 128, 128, false))
+				data.SetImageSmall(b64image.Resize(data.Image(), 64, 64, false))
+			case data.ImageMedium() != "":
+				data.SetImage(b64image.Resize(data.ImageMedium(), 1024, 1024, true))
+				data.SetImageMedium(b64image.Resize(data.ImageMedium(), 128, 128, true))
+				data.SetImageSmall(b64image.Resize(data.ImageMedium(), 64, 64, false))
+			case data.ImageSmall() != "":
+				data.SetImage(b64image.Resize(data.ImageSmall(), 1024, 1024, true))
+				data.SetImageMedium(b64image.Resize(data.ImageSmall(), 128, 128, true))
+				data.SetImageSmall(b64image.Resize(data.ImageSmall(), 64, 64, true))
 			}
-			return data
 		})
 
 	h.ProductTemplate().Methods().Create().Extend("",
-		func(rs h.ProductTemplateSet, data *h.ProductTemplateData, fieldsToReset ...models.FieldNamer) h.ProductTemplateSet {
-			data = rs.ResizeImageData(data)
+		func(rs h.ProductTemplateSet, data *h.ProductTemplateData) h.ProductTemplateSet {
+			rs.ResizeImageData(data)
 			template := rs.Super().Create(data)
 			if !rs.Env().Context().HasKey("create_product_product") {
 				template.WithContext("create_from_tmpl", true).CreateVariants()
 			}
 			// This is needed to set given values to first variant after creation
-			relatedVals := &h.ProductTemplateData{
-				Barcode:       data.Barcode,
-				DefaultCode:   data.DefaultCode,
-				StandardPrice: data.StandardPrice,
-				Volume:        data.Volume,
-				Weight:        data.Weight,
+			relatedVals := h.ProductTemplate().NewData()
+			if data.HasBarcode() {
+				relatedVals.SetBarcode(data.Barcode())
 			}
-			template.Write(relatedVals,
-				h.ProductTemplate().Barcode(),
-				h.ProductTemplate().DefaultCode(),
-				h.ProductTemplate().StandardPrice(),
-				h.ProductTemplate().Volume(),
-				h.ProductTemplate().Weight())
+			if data.HasDefaultCode() {
+				relatedVals.SetDefaultCode(data.DefaultCode())
+			}
+			if data.HasStandardPrice() {
+				relatedVals.SetStandardPrice(data.StandardPrice())
+			}
+			if data.HasVolume() {
+				relatedVals.SetVolume(data.Volume())
+			}
+			if data.HasWeight() {
+				relatedVals.SetWeight(data.Weight())
+			}
+			template.Write(relatedVals)
 			return template
 		})
 
 	h.ProductTemplate().Methods().Write().Extend("",
-		func(rs h.ProductTemplateSet, vals *h.ProductTemplateData, fieldsToUnset ...models.FieldNamer) bool {
-			vals = rs.ResizeImageData(vals)
-			res := rs.Super().Write(vals, fieldsToUnset...)
-			if _, exists := vals.Get(h.ProductTemplate().AttributeLines(), fieldsToUnset...); exists || vals.Active {
+		func(rs h.ProductTemplateSet, vals *h.ProductTemplateData) bool {
+			rs.ResizeImageData(vals)
+			res := rs.Super().Write(vals)
+			if vals.HasAttributeLines() || vals.Active() {
 				rs.CreateVariants()
 			}
-			if active, exists := vals.Get(h.ProductTemplate().Active(), fieldsToUnset...); exists && !active.(bool) {
-				rs.WithContext("active_test", false).ProductVariants().SetActive(vals.Active)
+			if vals.HasActive() && !vals.Active() {
+				rs.WithContext("active_test", false).ProductVariants().SetActive(vals.Active())
 			}
 			return res
 		})
 
 	h.ProductTemplate().Methods().Copy().Extend("",
-		func(rs h.ProductTemplateSet, overrides *h.ProductTemplateData, fieldsToUnset ...models.FieldNamer) h.ProductTemplateSet {
+		func(rs h.ProductTemplateSet, overrides *h.ProductTemplateData) h.ProductTemplateSet {
 			rs.EnsureOne()
-			if _, exists := overrides.Get(h.ProductTemplate().Name(), fieldsToUnset...); !exists {
-				overrides.Name = rs.T("%s (Copy)", rs.Name())
+			if !overrides.HasName() {
+				overrides.SetName(rs.T("%s (Copy)", rs.Name()))
 			}
-			return rs.Super().Copy(overrides, fieldsToUnset...)
+			return rs.Super().Copy(overrides)
 		})
 
 	h.ProductTemplate().Methods().NameGet().Extend("",
@@ -424,7 +417,7 @@ Use this field anywhere a small image is required.`},
 		func(rs h.ProductTemplateSet, priceType models.FieldNamer, uom h.ProductUomSet, currency h.CurrencySet, company h.CompanySet) float64 {
 			rs.EnsureOne()
 			template := rs
-			if priceType == h.ProductTemplate().StandardPrice() {
+			if priceType == q.ProductTemplate().StandardPrice() {
 				// StandardPrice field can only be seen by users in base.group_user
 				// Thus, in order to compute the sale price from the cost for users not in this group
 				// We fetch the standard price as the superuser
@@ -542,10 +535,9 @@ Use this field anywhere a small image is required.`},
 
 				// create new product
 				for _, variants := range toCreateVariants {
-					h.ProductProduct().Create(rs.Env(), &h.ProductProductData{
-						ProductTmpl:     tmpl,
-						AttributeValues: variants,
-					})
+					h.ProductProduct().Create(rs.Env(), h.ProductProduct().NewData().
+						SetProductTmpl(tmpl).
+						SetAttributeValues(variants))
 				}
 
 				// unlink or inactive product

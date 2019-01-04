@@ -43,102 +43,82 @@ type productTestData struct {
 
 func getProductTestData(env models.Environment) *productTestData {
 	var ptd productTestData
-	ptd.partner1 = h.Partner().Create(env, &h.PartnerData{
-		Name:  "Julia Agrolait",
-		Email: "julia@agrolait.example.com",
-	})
+	ptd.partner1 = h.Partner().Create(env, h.Partner().NewData().
+		SetName("Julia Agrolait").
+		SetEmail("julia@agrolait.example.com"))
 	ptd.uomUnit = h.ProductUom().Search(env, q.ProductUom().HexyaExternalID().Equals("product_product_uom_unit"))
 	ptd.uomDozen = h.ProductUom().Search(env, q.ProductUom().HexyaExternalID().Equals("product_product_uom_dozen"))
-	ptd.uomDunit = h.ProductUom().Create(env, &h.ProductUomData{
-		Name:      "DeciUnit",
-		Category:  ptd.uomUnit.Category(),
-		FactorInv: 0.1,
-		Factor:    10,
-		UomType:   "smaller",
-		Rounding:  0.001,
-	})
+	ptd.uomDunit = h.ProductUom().Create(env, h.ProductUom().NewData().
+		SetName("DeciUnit").
+		SetCategory(ptd.uomUnit.Category()).
+		SetFactorInv(0.1).
+		SetFactor(10).
+		SetUomType("smaller").
+		SetRounding(0.001))
 	ptd.uomWeight = h.ProductUom().Search(env, q.ProductUom().HexyaExternalID().Equals("product_product_uom_kgm"))
-	ptd.product0 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Work",
-		Type:  "service",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
-	ptd.product1 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Courage",
-		Type:  "consu",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomDunit,
-	})
-	ptd.product2 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Wood",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
-	ptd.product3 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Stone",
-		Uom:   ptd.uomDozen,
-		UomPo: ptd.uomDozen,
-	})
-	ptd.product4 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Stick",
-		Uom:   ptd.uomDozen,
-		UomPo: ptd.uomDozen,
-	})
-	ptd.product5 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Stone Tools",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
-	ptd.product6 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Door",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
-	ptd.prodAtt1 = h.ProductAttribute().Create(env, &h.ProductAttributeData{
-		Name: "Color",
-	})
-	ptd.prodAttr1V1 = h.ProductAttributeValue().Create(env, &h.ProductAttributeValueData{
-		Name:      "Red",
-		Attribute: ptd.prodAtt1,
-	})
-	ptd.prodAttr1V2 = h.ProductAttributeValue().Create(env, &h.ProductAttributeValueData{
-		Name:      "Blue",
-		Attribute: ptd.prodAtt1,
-	})
-	ptd.template7 = h.ProductTemplate().Create(env, &h.ProductTemplateData{
-		Name:  "Sofa",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-		AttributeLines: h.ProductAttributeLine().Create(env, &h.ProductAttributeLineData{
-			Attribute: ptd.prodAtt1,
-		}),
-	})
-	ptd.product7 = h.ProductProduct().Create(env, &h.ProductProductData{
-		ProductTmpl: ptd.template7,
-	})
-	ptd.product71 = h.ProductProduct().Create(env, &h.ProductProductData{
-		ProductTmpl:     ptd.template7,
-		AttributeValues: ptd.prodAttr1V1,
-	})
-	ptd.product72 = h.ProductProduct().Create(env, &h.ProductProductData{
-		ProductTmpl:     ptd.template7,
-		AttributeValues: ptd.prodAttr1V2,
-	})
-	ptd.product8 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "House",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
-	ptd.product9 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Paper",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
-	ptd.product10 = h.ProductProduct().Create(env, &h.ProductProductData{
-		Name:  "Stone",
-		Uom:   ptd.uomUnit,
-		UomPo: ptd.uomUnit,
-	})
+	ptd.product0 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Work").
+		SetType("service").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
+	ptd.product1 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Courage").
+		SetType("consu").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomDunit))
+	ptd.product2 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Wood").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
+	ptd.product3 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Stone").
+		SetUom(ptd.uomDozen).
+		SetUomPo(ptd.uomDozen))
+	ptd.product4 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Stick").
+		SetUom(ptd.uomDozen).
+		SetUomPo(ptd.uomDozen))
+	ptd.product5 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Stone Tools").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
+	ptd.product6 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Door").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
+	ptd.prodAtt1 = h.ProductAttribute().Create(env, h.ProductAttribute().NewData().
+		SetName("Color"))
+	ptd.prodAttr1V1 = h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().
+		SetName("Red").
+		SetAttribute(ptd.prodAtt1))
+	ptd.prodAttr1V2 = h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().
+		SetName("Blue").
+		SetAttribute(ptd.prodAtt1))
+	ptd.template7 = h.ProductTemplate().Create(env, h.ProductTemplate().NewData().
+		SetName("Sofa").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit).
+		SetAttributeLines(h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
+			SetAttribute(ptd.prodAtt1))))
+	ptd.product7 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetProductTmpl(ptd.template7))
+	ptd.product71 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetProductTmpl(ptd.template7).
+		SetAttributeValues(ptd.prodAttr1V1))
+	ptd.product72 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetProductTmpl(ptd.template7).
+		SetAttributeValues(ptd.prodAttr1V2))
+	ptd.product8 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("House").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
+	ptd.product9 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Paper").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
+	ptd.product10 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
+		SetName("Stone").
+		SetUom(ptd.uomUnit).
+		SetUomPo(ptd.uomUnit))
 	return &ptd
 }

@@ -30,9 +30,8 @@ func init() {
 				return new(h.PartnerData)
 			}
 			company := h.User().NewSet(rs.Env()).CurrentUser().Company()
-			return &h.PartnerData{
-				PropertyProductPricelist: h.ProductPricelist().NewSet(rs.Env()).GetPartnerPricelist(rs, company),
-			}
+			return h.Partner().NewData().SetPropertyProductPricelist(
+				h.ProductPricelist().NewSet(rs.Env()).GetPartnerPricelist(rs, company))
 		})
 
 	h.Partner().Methods().InverseProductPricelist().DeclareMethod(
@@ -61,6 +60,6 @@ func init() {
 	h.Partner().Methods().CommercialFields().Extend(
 		`CommercialFields`,
 		func(rs h.PartnerSet) []models.FieldNamer {
-			return append(rs.Super().CommercialFields(), h.Partner().PropertyProductPricelist())
+			return append(rs.Super().CommercialFields(), q.Partner().PropertyProductPricelist())
 		})
 }

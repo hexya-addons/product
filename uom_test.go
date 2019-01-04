@@ -36,13 +36,12 @@ func TestUom(t *testing.T) {
 				So(qty, ShouldEqual, 1.234)
 			})
 			Convey("Testing Roundings", func() {
-				productUom := h.ProductUom().Create(env, &h.ProductUomData{
-					Name:      "Score",
-					FactorInv: 20,
-					UomType:   "bigger",
-					Rounding:  1.0,
-					Category:  categUnit,
-				})
+				productUom := h.ProductUom().Create(env, h.ProductUom().NewData().
+					SetName("Score").
+					SetFactorInv(20).
+					SetUomType("bigger").
+					SetRounding(1.0).
+					SetCategory(categUnit))
 				qty := uomUnit.ComputeQuantity(2, productUom, true)
 				// Unlike Odoo, we do not want to go into rounding issues with epsilons.
 				So(qty, ShouldEqual, 0)

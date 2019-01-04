@@ -30,48 +30,51 @@ func TestProductPriceList(t *testing.T) {
 			uomUnit := h.ProductUom().NewSet(env).GetRecord("product_product_uom_unit")
 			list0 := h.ProductPricelist().NewSet(env).GetRecord("product_list0")
 
-			ipadRetinaDisplay.Write(&h.ProductProductData{
-				Uom:      uomUnit,
-				Category: category5,
-			})
-			customerPricelist := h.ProductPricelist().Create(env, &h.ProductPricelistData{
-				Name: "Customer pricelist",
-				Items: h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-					ComputePrice:  "formula",
-					Base:          "pricelist",
-					BasePricelist: list0,
-				}).Union(h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-					AppliedOn:     "1_product",
-					Sequence:      1,
-					Product:       ipadRetinaDisplay,
-					ComputePrice:  "formula",
-					Base:          "ListPrice",
-					PriceDiscount: 10,
-				})).Union(h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-					AppliedOn:      "1_product",
-					Sequence:       4,
-					Product:        lapTopE5023,
-					ComputePrice:   "formula",
-					Base:           "ListPrice",
-					PriceSurcharge: 1,
-				})).Union(h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-					AppliedOn:     "2_product_category",
-					Sequence:      1,
-					MinQuantity:   2,
-					ComputePrice:  "formula",
-					Base:          "ListPrice",
-					Category:      category5,
-					PriceDiscount: 5,
-				})).Union(h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-					AppliedOn:     "0_product_variant",
-					DateStart:     dates.ParseDate("2011-12-27"),
-					DateEnd:       dates.ParseDate("2011-12-31"),
-					Sequence:      1,
-					ComputePrice:  "formula",
-					Base:          "ListPrice",
-					PriceDiscount: 30,
-				})),
-			})
+			ipadRetinaDisplay.Write(h.ProductProduct().NewData().
+				SetUom(uomUnit).
+				SetCategory(category5))
+			customerPricelist := h.ProductPricelist().Create(env, h.ProductPricelist().NewData().
+				SetName("Customer pricelist").
+				SetItems(
+					h.ProductPricelistItem().Create(env,
+						h.ProductPricelistItem().NewData().
+							SetComputePrice("formula").
+							SetBase("pricelist").
+							SetBasePricelist(list0)).
+						Union(
+							h.ProductPricelistItem().Create(env, h.ProductPricelistItem().NewData().
+								SetAppliedOn("1_product").
+								SetSequence(1).
+								SetProduct(ipadRetinaDisplay).
+								SetComputePrice("formula").
+								SetBase("ListPrice").
+								SetPriceDiscount(10))).
+						Union(
+							h.ProductPricelistItem().Create(env, h.ProductPricelistItem().NewData().
+								SetAppliedOn("1_product").
+								SetSequence(4).
+								SetProduct(lapTopE5023).
+								SetComputePrice("formula").
+								SetBase("ListPrice").
+								SetPriceSurcharge(1))).
+						Union(
+							h.ProductPricelistItem().Create(env, h.ProductPricelistItem().NewData().
+								SetAppliedOn("2_product_category").
+								SetSequence(1).
+								SetMinQuantity(2).
+								SetComputePrice("formula").
+								SetBase("ListPrice").
+								SetCategory(category5).
+								SetPriceDiscount(5))).
+						Union(
+							h.ProductPricelistItem().Create(env, h.ProductPricelistItem().NewData().
+								SetAppliedOn("0_product_variant").
+								SetDateStart(dates.ParseDate("2011-12-27")).
+								SetDateEnd(dates.ParseDate("2011-12-31")).
+								SetSequence(1).
+								SetComputePrice("formula").
+								SetBase("ListPrice").
+								SetPriceDiscount(30)))))
 			Convey("Test calculation of product price based on pricelist", func() {
 				context := types.NewContext().
 					WithKey("pricelist", customerPricelist.ID()).

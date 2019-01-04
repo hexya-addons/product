@@ -44,9 +44,8 @@ func init() {
 	h.ProductCategory().Methods().ComputeProductCount().DeclareMethod(
 		`ComputeProductCount returns the number of products within this category (not considering children categories)`,
 		func(rs h.ProductCategorySet) *h.ProductCategoryData {
-			return &h.ProductCategoryData{
-				ProductCount: h.ProductTemplate().Search(rs.Env(), q.ProductTemplate().Category().Equals(rs)).SearchCount(),
-			}
+			return h.ProductCategory().NewData().SetProductCount(
+				h.ProductTemplate().Search(rs.Env(), q.ProductTemplate().Category().Equals(rs)).SearchCount())
 		})
 
 	h.ProductCategory().Methods().CheckCategoryRecursion().DeclareMethod(
@@ -202,9 +201,8 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			}
 			partnerID := rs.Env().Context().GetInteger("partner")
 			partner := h.Partner().Browse(rs.Env(), []int64{partnerID})
-			return &h.ProductProductData{
-				Price: priceList.GetProductPrice(rs, quantity, partner, dates.Date{}, h.ProductUom().NewSet(rs.Env())),
-			}
+			return h.ProductProduct().NewData().SetPrice(
+				priceList.GetProductPrice(rs, quantity, partner, dates.Date{}, h.ProductUom().NewSet(rs.Env())))
 		})
 
 	h.ProductProduct().Methods().InverseProductPrice().DeclareMethod(
@@ -238,9 +236,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 					}
 				}
 			}
-			return &h.ProductProductData{
-				PriceExtra: priceExtra,
-			}
+			return h.ProductProduct().NewData().SetPriceExtra(priceExtra)
 		})
 
 	h.ProductProduct().Methods().ComputeProductLstPrice().DeclareMethod(
@@ -251,9 +247,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 				toUoM := h.ProductUom().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("uom")})
 				listPrice = rs.Uom().ComputePrice(listPrice, toUoM)
 			}
-			return &h.ProductProductData{
-				LstPrice: listPrice + rs.PriceExtra(),
-			}
+			return h.ProductProduct().NewData().SetLstPrice(listPrice + rs.PriceExtra())
 		})
 
 	h.ProductProduct().Methods().ComputeProductCode().DeclareMethod(
@@ -270,9 +264,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			if code == "" {
 				code = rs.DefaultCode()
 			}
-			return &h.ProductProductData{
-				Code: code,
-			}
+			return h.ProductProduct().NewData().SetCode(code)
 		})
 
 	h.ProductProduct().Methods().ComputePartnerRef().DeclareMethod(
@@ -293,9 +285,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			if productName == "" {
 				productName = rs.Name()
 			}
-			return &h.ProductProductData{
-				PartnerRef: rs.NameFormat(productName, code),
-			}
+			return h.ProductProduct().NewData().SetPartnerRef(rs.NameFormat(productName, code))
 		})
 
 	h.ProductProduct().Methods().ComputeImages().DeclareMethod(
@@ -320,11 +310,10 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			if image == "" {
 				image = rs.ProductTmpl().Image()
 			}
-			return &h.ProductProductData{
-				ImageSmall:  imageSmall,
-				ImageMedium: imageMedium,
-				Image:       image,
-			}
+			return h.ProductProduct().NewData().
+				SetImageSmall(imageSmall).
+				SetImageMedium(imageMedium).
+				SetImage(image)
 		})
 
 	h.ProductProduct().Methods().InverseImageValue().DeclareMethod(
@@ -344,9 +333,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			rs.EnsureOne()
 			priceListItems := h.ProductPricelistItem().Search(rs.Env(),
 				q.ProductPricelistItem().Product().Equals(rs).Or().ProductTmpl().Equals(rs.ProductTmpl()))
-			return &h.ProductProductData{
-				PricelistItems: priceListItems,
-			}
+			return h.ProductProduct().NewData().SetPricelistItems(priceListItems)
 		})
 
 	h.ProductProduct().Methods().CheckAttributeValueIds().DeclareMethod(
@@ -363,31 +350,29 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().OnchangeUom().DeclareMethod(
 		`OnchangeUom process UI triggers when changing th UoM`,
-		func(rs h.ProductProductSet) (*h.ProductProductData, []models.FieldNamer) {
+		func(rs h.ProductProductSet) *h.ProductProductData {
 			if !rs.Uom().IsEmpty() && !rs.UomPo().IsEmpty() && !rs.Uom().Category().Equals(rs.UomPo().Category()) {
-				return &h.ProductProductData{
-					UomPo: rs.Uom(),
-				}, []models.FieldNamer{h.ProductProduct().UomPo()}
+				return h.ProductProduct().NewData().SetUomPo(rs.Uom())
 			}
-			return new(h.ProductProductData), []models.FieldNamer{}
+			return h.ProductProduct().NewData()
 		})
 
 	h.ProductProduct().Methods().Create().Extend("",
-		func(rs h.ProductProductSet, data *h.ProductProductData, fieldsToReset ...models.FieldNamer) h.ProductProductSet {
+		func(rs h.ProductProductSet, data *h.ProductProductData) h.ProductProductSet {
 			product := rs.WithContext("create_product_product", true).Super().Create(data)
 			// When a unique variant is created from tmpl then the standard price is set by DefineStandardPrice
 			if !rs.Env().Context().HasKey("create_from_tmpl") && product.ProductTmpl().ProductVariants().Len() == 1 {
-				product.DefineStandardPrice(data.StandardPrice)
+				product.DefineStandardPrice(data.StandardPrice())
 			}
 			return product
 		})
 
 	h.ProductProduct().Methods().Write().Extend("",
-		func(rs h.ProductProductSet, data *h.ProductProductData, fieldsToReset ...models.FieldNamer) bool {
+		func(rs h.ProductProductSet, data *h.ProductProductData) bool {
 			// Store the standard price change in order to be able to retrieve the cost of a product for a given date
-			res := rs.Super().Write(data, fieldsToReset...)
-			if _, ok := data.Get(h.ProductProduct().StandardPrice(), fieldsToReset...); ok {
-				rs.DefineStandardPrice(data.StandardPrice)
+			res := rs.Super().Write(data)
+			if data.HasStandardPrice() {
+				rs.DefineStandardPrice(data.StandardPrice())
 			}
 			return res
 		})
@@ -424,16 +409,14 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().Copy().Extend("",
-		func(rs h.ProductProductSet, overrides *h.ProductProductData, fieldsToReset ...models.FieldNamer) h.ProductProductSet {
+		func(rs h.ProductProductSet, overrides *h.ProductProductData) h.ProductProductSet {
 			if rs.Env().Context().HasKey("variant") {
 				// if we copy a variant or create one, we keep the same template
-				overrides.ProductTmpl = rs.ProductTmpl()
-				fieldsToReset = append(fieldsToReset, h.ProductProduct().ProductTmpl())
-			} else if _, ok := overrides.Get(h.ProductProduct().Name(), fieldsToReset...); !ok {
-				overrides.Name = rs.Name()
-				fieldsToReset = append(fieldsToReset, h.ProductProduct().Name())
+				overrides.SetProductTmpl(rs.ProductTmpl())
+			} else if !overrides.HasName() {
+				overrides.SetName(rs.Name())
 			}
-			return rs.Super().Copy(overrides, fieldsToReset...)
+			return rs.Super().Copy(overrides)
 		})
 
 	h.ProductProduct().Methods().Search().Extend("",
@@ -642,7 +625,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			}
 
 			product := rs
-			if priceType == h.ProductProduct().StandardPrice() {
+			if priceType == q.ProductProduct().StandardPrice() {
 				// StandardPrice field can only be seen by users in base.group_user
 				// Thus, in order to compute the sale price from the cost for users not in this group
 				// We fetch the standard price as the superuser
@@ -656,7 +639,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 			}
 
 			price := product.Get(priceType.String()).(float64)
-			if priceType == h.ProductProduct().ListPrice() {
+			if priceType == q.ProductProduct().ListPrice() {
 				price += product.PriceExtra()
 			}
 
@@ -680,11 +663,10 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 				company = h.Company().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("force_company")})
 			}
 			for _, product := range rs.Records() {
-				h.ProductPriceHistory().Create(rs.Env(), &h.ProductPriceHistoryData{
-					Product: product,
-					Cost:    value,
-					Company: company,
-				})
+				h.ProductPriceHistory().Create(rs.Env(), h.ProductPriceHistory().NewData().
+					SetProduct(product).
+					SetCost(value).
+					SetCompany(company))
 			}
 		})
 

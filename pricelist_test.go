@@ -35,22 +35,23 @@ func getTestPriceListData(env models.Environment) *priceListTestData {
 		uomKgm:          h.ProductUom().NewSet(env).GetRecord("product_product_uom_kgm"),
 		publicPriceList: h.ProductPricelist().NewSet(env).GetRecord("product_list0"),
 	}
-	pltd.salePriceList = h.ProductPricelist().Create(env, &h.ProductPricelistData{
-		Name: "Sale pricelist",
-		Items: h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-			ComputePrice:  "formula",
-			Base:          "ListPrice",
-			PriceDiscount: 10,
-			Product:       pltd.usbAdapter,
-			AppliedOn:     "0_product_variant",
-		}).Union(h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-			ComputePrice:   "formula",
-			Base:           "ListPrice",
-			PriceSurcharge: -0.5,
-			Product:        pltd.dataCard,
-			AppliedOn:      "0_product_variant",
-		})),
-	})
+	pltd.salePriceList = h.ProductPricelist().Create(env, h.ProductPricelist().NewData().
+		SetName("Sale pricelist").
+		SetItems(
+			h.ProductPricelistItem().Create(env,
+				h.ProductPricelistItem().NewData().
+					SetComputePrice("formula").
+					SetBase("ListPrice").
+					SetPriceDiscount(10).
+					SetProduct(pltd.usbAdapter).
+					SetAppliedOn("0_product_variant")).
+				Union(
+					h.ProductPricelistItem().Create(env, h.ProductPricelistItem().NewData().
+						SetComputePrice("formula").
+						SetBase("ListPrice").
+						SetPriceSurcharge(-0.5).
+						SetProduct(pltd.dataCard).
+						SetAppliedOn("0_product_variant")))))
 	return pltd
 }
 
@@ -88,24 +89,22 @@ func TestPriceList(t *testing.T) {
 				pltd := getTestPriceListData(env)
 				tonnePrice := float64(100)
 				pltd.uomTon.SetRounding(0.001)
-				spam := pltd.usbAdapter.Copy(&h.ProductProductData{
-					Name:      "1 tonne of spam",
-					Uom:       pltd.uomTon,
-					UomPo:     pltd.uomTon,
-					ListPrice: tonnePrice,
-					Type:      "consu",
-				})
+				spam := pltd.usbAdapter.Copy(h.ProductProduct().NewData().
+					SetName("1 tonne of spam").
+					SetUom(pltd.uomTon).
+					SetUomPo(pltd.uomTon).
+					SetListPrice(tonnePrice).
+					SetType("consu"))
 
-				h.ProductPricelistItem().Create(env, &h.ProductPricelistItemData{
-					Pricelist:      pltd.publicPriceList,
-					Sequence:       10,
-					AppliedOn:      "0_product_variant",
-					ComputePrice:   "formula",
-					Base:           "ListPrice",
-					MinQuantity:    3,
-					PriceSurcharge: -10,
-					Product:        spam,
-				})
+				h.ProductPricelistItem().Create(env, h.ProductPricelistItem().NewData().
+					SetPricelist(pltd.publicPriceList).
+					SetSequence(10).
+					SetAppliedOn("0_product_variant").
+					SetComputePrice("formula").
+					SetBase("ListPrice").
+					SetMinQuantity(3).
+					SetPriceSurcharge(-10).
+					SetProduct(spam))
 
 				testUnitPrice := func(qty float64, uom h.ProductUomSet, expectedUnitPrice float64) {
 					sp := spam.WithNewContext(types.NewContext().WithKey("uom", uom.ID()))

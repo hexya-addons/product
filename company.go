@@ -17,43 +17,41 @@ func init() {
 	})
 
 	h.Company().Methods().Create().Extend("",
-		func(rs h.CompanySet, vals *h.CompanyData, fieldsToReset ...models.FieldNamer) h.CompanySet {
+		func(rs h.CompanySet, vals *h.CompanyData) h.CompanySet {
 			newCompany := rs.Super().Create(vals)
 			priceList := h.ProductPricelist().Search(rs.Env(),
 				q.ProductPricelist().Currency().Equals(newCompany.Currency()).And().Company().IsNull()).Limit(1)
 			if priceList.IsEmpty() {
-				priceList = h.ProductPricelist().Create(rs.Env(), &h.ProductPricelistData{
-					Name:     newCompany.Name(),
-					Currency: newCompany.Currency(),
-				})
+				priceList = h.ProductPricelist().Create(rs.Env(), h.ProductPricelist().NewData().
+					SetName(newCompany.Name()).
+					SetCurrency(newCompany.Currency()))
 			}
 			newCompany.SetDefaultPriceList(priceList)
 			return newCompany
 		})
 
 	h.Company().Methods().Write().Extend("",
-		func(rs h.CompanySet, vals *h.CompanyData, fieldsToUnset ...models.FieldNamer) bool {
+		func(rs h.CompanySet, vals *h.CompanyData) bool {
 			// When we modify the currency of the company, we reflect the change on the list0 pricelist, if
 			// that pricelist is not used by another company. Otherwise, we create a new pricelist for the
 			// given currency.
-			currency := vals.Currency
+			currency := vals.Currency()
 			mainPricelist := h.ProductPricelist().Search(rs.Env(), q.ProductPricelist().HexyaExternalID().Equals("product_list0"))
 			if currency.IsEmpty() || mainPricelist.IsEmpty() {
-				return rs.Super().Write(vals, fieldsToUnset...)
+				return rs.Super().Write(vals)
 			}
 			nbCompanies := h.Company().NewSet(rs.Env()).SearchAll().SearchCount()
 			for _, company := range rs.Records() {
 				if mainPricelist.Company().Equals(company) || (mainPricelist.Company().IsEmpty() && nbCompanies == 1) {
 					mainPricelist.SetCurrency(currency)
 				} else {
-					priceList := h.ProductPricelist().Create(rs.Env(), &h.ProductPricelistData{
-						Name:     company.Name(),
-						Currency: currency,
-					})
+					priceList := h.ProductPricelist().Create(rs.Env(), h.ProductPricelist().NewData().
+						SetName(company.Name()).
+						SetCurrency(currency))
 					company.SetDefaultPriceList(priceList)
 				}
 			}
-			return rs.Super().Write(vals, fieldsToUnset...)
+			return rs.Super().Write(vals)
 		})
 
 }

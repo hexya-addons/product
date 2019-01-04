@@ -32,9 +32,10 @@ func init() {
 			ReverseFK: "Pricelist", JSON: "item_ids", Copy: true,
 			Default: func(env models.Environment) interface{} {
 				listItems := h.ProductPricelistItem().NewSet(env)
-				values, _ := listItems.DataStruct(listItems.DefaultGet())
-				values.ComputePrice = "formula"
-				return listItems.Create(values)
+				var values h.ProductPricelistItemData
+				listItems.DefaultGet().ConvertToModelData(listItems, &values)
+				values.SetComputePrice("formula")
+				return listItems.Create(&values)
 			}},
 		"Currency": models.Many2OneField{RelationModel: h.Currency(),
 			Default: func(env models.Environment) interface{} {
@@ -119,7 +120,7 @@ func init() {
 				}
 			}
 			priceUom := qtyUom
-			price = product.PriceCompute(h.ProductProduct().ListPrice(),
+			price = product.PriceCompute(q.ProductProduct().ListPrice(),
 				h.ProductUom().NewSet(rs.Env()), h.Currency().NewSet(rs.Env()), h.Company().NewSet(rs.Env()))
 
 			for _, rule := range items.Records() {
@@ -371,48 +372,44 @@ To have prices that end in 9.99, set rounding 10, surcharge -0.01`},
 			default:
 				price = rs.T("%v %% discount and %v surcharge", math.Abs(rs.PriceDiscount()), rs.PriceSurcharge())
 			}
-			return &h.ProductPricelistItemData{
-				Price: price,
-				Name:  name,
-			}
+			return h.ProductPricelistItem().NewData().
+				SetPrice(price).
+				SetName(name)
 		})
 
 	h.ProductPricelistItem().Methods().OnchangeAppliedOn().DeclareMethod(
 		`OnchangeAppliedOn updates values when the AppliedOn is changed`,
-		func(rs h.ProductPricelistItemSet) (*h.ProductPricelistItemData, []models.FieldNamer) {
-			var fieldsToReset []models.FieldNamer
+		func(rs h.ProductPricelistItemSet) *h.ProductPricelistItemData {
+			res := h.ProductPricelistItem().NewData()
 			if rs.AppliedOn() != "0_product_variant" {
-				fieldsToReset = append(fieldsToReset, h.ProductPricelistItem().Product())
+				res.SetProduct(h.ProductProduct().NewSet(rs.Env()))
 			}
 			if rs.AppliedOn() != "1_product" {
-				fieldsToReset = append(fieldsToReset, h.ProductPricelistItem().ProductTmpl())
+				res.SetProductTmpl(h.ProductTemplate().NewSet(rs.Env()))
 			}
 			if rs.AppliedOn() != "2_product_category" {
-				fieldsToReset = append(fieldsToReset, h.ProductPricelistItem().Category())
+				res.SetCategory(h.ProductCategory().NewSet(rs.Env()))
 			}
-			return new(h.ProductPricelistItemData), fieldsToReset
+			return res
 		})
 
 	h.ProductPricelistItem().Methods().OnchangeComputePrice().DeclareMethod(
 		`OnchangeComputePrice updates values when the ComputePrice field is changed`,
-		func(rs h.ProductPricelistItemSet) (*h.ProductPricelistItemData, []models.FieldNamer) {
-			var fieldsToReset []models.FieldNamer
+		func(rs h.ProductPricelistItemSet) *h.ProductPricelistItemData {
+			res := h.ProductPricelistItem().NewData()
 			if rs.ComputePrice() != "fixed" {
-				fieldsToReset = append(fieldsToReset, h.ProductPricelistItem().FixedPrice())
+				res.SetFixedPrice(0)
 			}
 			if rs.ComputePrice() != "percentage" {
-				fieldsToReset = append(fieldsToReset, h.ProductPricelistItem().PercentPrice())
+				res.SetPercentPrice(0)
 			}
 			if rs.ComputePrice() != "formula" {
-				fieldsToReset = append(fieldsToReset,
-					h.ProductPricelistItem().PriceDiscount(),
-					h.ProductPricelistItem().PriceSurcharge(),
-					h.ProductPricelistItem().PriceRound(),
-					h.ProductPricelistItem().PriceMinMargin(),
-					h.ProductPricelistItem().PriceMaxMargin(),
-				)
+				res.SetPriceDiscount(0)
+				res.SetPriceSurcharge(0)
+				res.SetPriceRound(0)
+				res.SetPriceMinMargin(0)
+				res.SetPriceMaxMargin(0)
 			}
-			return new(h.ProductPricelistItemData), fieldsToReset
+			return res
 		})
-
 }
