@@ -11,18 +11,19 @@ import (
 	"github.com/hexya-erp/hexya/src/models/types"
 	"github.com/hexya-erp/hexya/src/models/types/dates"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 type priceListTestData struct {
-	dataCard        h.ProductProductSet
-	usbAdapter      h.ProductProductSet
-	uomTon          h.ProductUomSet
-	uomUnit         h.ProductUomSet
-	uomDozen        h.ProductUomSet
-	uomKgm          h.ProductUomSet
-	publicPriceList h.ProductPricelistSet
-	salePriceList   h.ProductPricelistSet
+	dataCard        m.ProductProductSet
+	usbAdapter      m.ProductProductSet
+	uomTon          m.ProductUomSet
+	uomUnit         m.ProductUomSet
+	uomDozen        m.ProductUomSet
+	uomKgm          m.ProductUomSet
+	publicPriceList m.ProductPricelistSet
+	salePriceList   m.ProductPricelistSet
 }
 
 func getTestPriceListData(env models.Environment) *priceListTestData {
@@ -106,7 +107,7 @@ func TestPriceList(t *testing.T) {
 					SetPriceSurcharge(-10).
 					SetProduct(spam))
 
-				testUnitPrice := func(qty float64, uom h.ProductUomSet, expectedUnitPrice float64) {
+				testUnitPrice := func(qty float64, uom m.ProductUomSet, expectedUnitPrice float64) {
 					sp := spam.WithNewContext(types.NewContext().WithKey("uom", uom.ID()))
 					unitPrice := pltd.publicPriceList.WithNewContext(types.NewContext().WithKey("uom", uom.ID())).
 						GetProductPrice(sp, qty, h.Partner().NewSet(env), dates.Date{}, h.ProductUom().NewSet(env))

@@ -10,6 +10,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models/types"
 	"github.com/hexya-erp/hexya/src/tools/nbutils"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 )
 
 func init() {
@@ -54,7 +55,7 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 
 	h.ProductUom().Methods().ComputeFactorInv().DeclareMethod(
 		`ComputeFactorInv computes the inverse factor`,
-		func(rs h.ProductUomSet) *h.ProductUomData {
+		func(rs m.ProductUomSet) m.ProductUomData {
 			var factorInv float64
 			if rs.Factor() != 0 {
 				factorInv = 1 / rs.Factor()
@@ -64,7 +65,7 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 
 	h.ProductUom().Methods().OnchangeUomType().DeclareMethod(
 		`OnchangeUomType updates factor when the UoM type is changed`,
-		func(rs h.ProductUomSet) *h.ProductUomData {
+		func(rs m.ProductUomSet) m.ProductUomData {
 			res := h.ProductUom().NewData()
 			if rs.UomType() == "reference" {
 				res.SetFactor(1)
@@ -74,7 +75,7 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 		})
 
 	h.ProductUom().Methods().Create().Extend("",
-		func(rs h.ProductUomSet, data *h.ProductUomData) h.ProductUomSet {
+		func(rs m.ProductUomSet, data m.ProductUomData) m.ProductUomSet {
 			if data.FactorInv() != 0 {
 				data.SetFactor(1 / data.FactorInv())
 				data.SetFactorInv(0)
@@ -83,7 +84,7 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 		})
 
 	h.ProductUom().Methods().Write().Extend("",
-		func(rs h.ProductUomSet, vals *h.ProductUomData) bool {
+		func(rs m.ProductUomSet, vals m.ProductUomData) bool {
 			if vals.HasFactorInv() {
 				var factor float64
 				if vals.FactorInv() != 0 {
@@ -100,7 +101,7 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 		the result will be rounded to toUnit rounding.
 
 		It panics if both units are not from the same category`,
-		func(rs h.ProductUomSet, qty float64, toUnit h.ProductUomSet, round bool) float64 {
+		func(rs m.ProductUomSet, qty float64, toUnit m.ProductUomSet, round bool) float64 {
 			if rs.IsEmpty() {
 				return qty
 			}
@@ -121,7 +122,7 @@ Use 1.0 for a Unit of Measure that cannot be further split, such as a piece.`},
 
 	h.ProductUom().Methods().ComputePrice().DeclareMethod(
 		`ComputePrice computes the price per 'toUnit' from the given price per this unit`,
-		func(rs h.ProductUomSet, price float64, toUnit h.ProductUomSet) float64 {
+		func(rs m.ProductUomSet, price float64, toUnit m.ProductUomSet) float64 {
 			rs.EnsureOne()
 			if price == 0 || toUnit.IsEmpty() || rs.Equals(toUnit) {
 				return price

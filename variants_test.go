@@ -10,6 +10,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models/operator"
 	"github.com/hexya-erp/hexya/src/models/security"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -115,14 +116,14 @@ func TestVariants(t *testing.T) {
 					q.ProductProduct().ProductTmpl().Equals(testTemplate).
 						And().AttributeValues().Equals(ptd.prodAttr1V2))
 
-				products := productVariants.Filtered(func(rs h.ProductProductSet) bool {
+				products := productVariants.Filtered(func(rs m.ProductProductSet) bool {
 					return !rs.AttributeValues().Intersect(sizeAttreValueS).IsEmpty()
 				})
 				So(products.Len(), ShouldEqual, 1)
 				So(products.AttributeValues().Len(), ShouldEqual, 2)
 				So(products.AttributeValues().Equals(sizeAttreValueS.Union(ptd.prodAttr1V2)), ShouldBeTrue)
 
-				products = productVariants.Filtered(func(rs h.ProductProductSet) bool {
+				products = productVariants.Filtered(func(rs m.ProductProductSet) bool {
 					return !rs.AttributeValues().Intersect(sizeAttreValueM).IsEmpty()
 				})
 				So(products.Len(), ShouldEqual, 1)
@@ -143,12 +144,12 @@ func TestVariants(t *testing.T) {
 								SetAttribute(ptd.prodAtt1).
 								SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 6)
-				for _, value1 := range []h.ProductAttributeValueSet{ptd.prodAttr1V1, ptd.prodAttr1V2} {
+				for _, value1 := range []m.ProductAttributeValueSet{ptd.prodAttr1V1, ptd.prodAttr1V2} {
 					productVariants := h.ProductProduct().Search(env,
 						q.ProductProduct().ProductTmpl().Equals(testTemplate).
 							And().AttributeValues().Equals(value1))
-					for _, value2 := range []h.ProductAttributeValueSet{sizeAttreValueS, sizeAttreValueM, sizeAttreValueL} {
-						products := productVariants.Filtered(func(rs h.ProductProductSet) bool {
+					for _, value2 := range []m.ProductAttributeValueSet{sizeAttreValueS, sizeAttreValueM, sizeAttreValueL} {
+						products := productVariants.Filtered(func(rs m.ProductProductSet) bool {
 							return !rs.AttributeValues().Intersect(value2).IsEmpty()
 						})
 						So(products.Len(), ShouldEqual, 1)
@@ -169,19 +170,19 @@ func TestVariants(t *testing.T) {
 							SetAttribute(ptd.prodAtt1).
 							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 4)
-				sizeAttributeLine := testTemplate.AttributeLines().Filtered(func(rs h.ProductAttributeLineSet) bool {
+				sizeAttributeLine := testTemplate.AttributeLines().Filtered(func(rs m.ProductAttributeLineSet) bool {
 					return rs.Attribute().Equals(sizeAttr)
 				})
 				sizeAttributeLine.SetValues(sizeAttributeLine.Values().Union(sizeAttreValueL))
 				// Trigger variant updates:
 				testTemplate.SetAttributeLines(testTemplate.AttributeLines())
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 6)
-				for _, value1 := range []h.ProductAttributeValueSet{ptd.prodAttr1V1, ptd.prodAttr1V2} {
+				for _, value1 := range []m.ProductAttributeValueSet{ptd.prodAttr1V1, ptd.prodAttr1V2} {
 					productVariants := h.ProductProduct().Search(env,
 						q.ProductProduct().ProductTmpl().Equals(testTemplate).
 							And().AttributeValues().Equals(value1))
-					for _, value2 := range []h.ProductAttributeValueSet{sizeAttreValueS, sizeAttreValueM, sizeAttreValueL} {
-						products := productVariants.Filtered(func(rs h.ProductProductSet) bool {
+					for _, value2 := range []m.ProductAttributeValueSet{sizeAttreValueS, sizeAttreValueM, sizeAttreValueL} {
+						products := productVariants.Filtered(func(rs m.ProductProductSet) bool {
 							return !rs.AttributeValues().Intersect(value2).IsEmpty()
 						})
 						So(products.Len(), ShouldEqual, 1)

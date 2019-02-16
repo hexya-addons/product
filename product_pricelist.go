@@ -16,6 +16,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models/types/dates"
 	"github.com/hexya-erp/hexya/src/tools/nbutils"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 )
 
@@ -32,10 +33,9 @@ func init() {
 			ReverseFK: "Pricelist", JSON: "item_ids", Copy: true,
 			Default: func(env models.Environment) interface{} {
 				listItems := h.ProductPricelistItem().NewSet(env)
-				var values h.ProductPricelistItemData
-				listItems.DefaultGet().ConvertToModelData(listItems, &values)
+				values := h.ProductPricelistItem().NewData(listItems.DefaultGet())
 				values.SetComputePrice("formula")
-				return listItems.Create(&values)
+				return listItems.Create(values)
 			}},
 		"Currency": models.Many2OneField{RelationModel: h.Currency(),
 			Default: func(env models.Environment) interface{} {
@@ -47,12 +47,12 @@ func init() {
 	})
 
 	h.ProductPricelist().Methods().NameGet().Extend("",
-		func(rs h.ProductPricelistSet) string {
+		func(rs m.ProductPricelistSet) string {
 			return fmt.Sprintf("%s (%s)", rs.Name(), rs.Currency().Name())
 		})
 
 	h.ProductPricelist().Methods().SearchByName().Extend("",
-		func(rs h.ProductPricelistSet, name string, op operator.Operator, additionalCondition q.ProductPricelistCondition, limit int) h.ProductPricelistSet {
+		func(rs m.ProductPricelistSet, name string, op operator.Operator, additionalCondition q.ProductPricelistCondition, limit int) m.ProductPricelistSet {
 			return rs.Super().SearchByName(name, op, additionalCondition, limit)
 		})
 
@@ -61,8 +61,8 @@ func init() {
 		price list. Price depends on quantity, partner and date, and is given for the uom.
 
 		If date or uom are not given, this function will try to read them from the context 'date' and 'uom' keys`,
-		func(rs h.ProductPricelistSet, product h.ProductProductSet, quantity float64, partner h.PartnerSet,
-			date dates.Date, uom h.ProductUomSet) (float64, h.ProductPricelistItemSet) {
+		func(rs m.ProductPricelistSet, product m.ProductProductSet, quantity float64, partner m.PartnerSet,
+			date dates.Date, uom m.ProductUomSet) (float64, m.ProductPricelistItemSet) {
 
 			rs.EnsureOne()
 			if date.IsZero() {
@@ -198,8 +198,8 @@ func init() {
 	h.ProductPricelist().Methods().GetProductPrice().DeclareMethod(
 		`GetProductPrice returns the price of the given product in the given quantity for the given partner, at
 		the given date and in the given UoM according to this price list.`,
-		func(rs h.ProductPricelistSet, product h.ProductProductSet, quantity float64, partner h.PartnerSet,
-			date dates.Date, uom h.ProductUomSet) float64 {
+		func(rs m.ProductPricelistSet, product m.ProductProductSet, quantity float64, partner m.PartnerSet,
+			date dates.Date, uom m.ProductUomSet) float64 {
 
 			rs.EnsureOne()
 			price, _ := rs.ComputePriceRule(product, quantity, partner, date, uom)
@@ -209,8 +209,8 @@ func init() {
 	h.ProductPricelist().Methods().GetProductPriceRule().DeclareMethod(
 		`GetProductPriceRule returns the applicable price list rule for the given product in the given quantity
 		for the given partner, at the given date and in the given UoM according to this price list.`,
-		func(rs h.ProductPricelistSet, product h.ProductProductSet, quantity float64, partner h.PartnerSet,
-			date dates.Date, uom h.ProductUomSet) h.ProductPricelistItemSet {
+		func(rs m.ProductPricelistSet, product m.ProductProductSet, quantity float64, partner m.PartnerSet,
+			date dates.Date, uom m.ProductUomSet) m.ProductPricelistItemSet {
 
 			rs.EnsureOne()
 			_, rule := rs.ComputePriceRule(product, quantity, partner, date, uom)
@@ -219,7 +219,7 @@ func init() {
 
 	h.ProductPricelist().Methods().GetPartnerPricelist().DeclareMethod(
 		`GetPartnerPricelist retrieve the applicable pricelist for the given partner in the given company.`,
-		func(rs h.ProductPricelistSet, partner h.PartnerSet, company h.CompanySet) h.ProductPricelistSet {
+		func(rs m.ProductPricelistSet, partner m.PartnerSet, company m.CompanySet) m.ProductPricelistSet {
 			if company.IsEmpty() {
 				company = h.User().NewSet(rs.Env()).CurrentUser().Company()
 			}
@@ -331,7 +331,7 @@ To have prices that end in 9.99, set rounding 10, surcharge -0.01`},
 
 	h.ProductPricelistItem().Methods().CheckOtherList().DeclareMethod(
 		`CheckOtherList panics if the other list used in a rule is the same as the base list`,
-		func(rs h.ProductPricelistItemSet) {
+		func(rs m.ProductPricelistItemSet) {
 			for _, item := range rs.Records() {
 				if item.Base() == "pricelist" && !item.Pricelist().IsEmpty() && item.Pricelist().Equals(item.BasePricelist()) {
 					log.Panic(rs.T("Error! You cannot assign the Main Pricelist as Other Pricelist in PriceList Item!"))
@@ -341,7 +341,7 @@ To have prices that end in 9.99, set rounding 10, surcharge -0.01`},
 
 	h.ProductPricelistItem().Methods().CheckMargin().DeclareMethod(
 		`CheckMargin checks that the max margin is greater or equal to the min margin`,
-		func(rs h.ProductPricelistItemSet) {
+		func(rs m.ProductPricelistItemSet) {
 			for _, item := range rs.Records() {
 				if item.PriceMinMargin() > item.PriceMaxMargin() {
 					log.Panic(rs.T("Error! The minimum margin should be lower than the maximum margin."))
@@ -351,7 +351,7 @@ To have prices that end in 9.99, set rounding 10, surcharge -0.01`},
 
 	h.ProductPricelistItem().Methods().GetPricelistItemNamePrice().DeclareMethod(
 		`GetPricelistItemNamePrice computes the name and the price fields of this line`,
-		func(rs h.ProductPricelistItemSet) *h.ProductPricelistItemData {
+		func(rs m.ProductPricelistItemSet) m.ProductPricelistItemData {
 			var name, price string
 			switch {
 			case !rs.Category().IsEmpty():
@@ -379,7 +379,7 @@ To have prices that end in 9.99, set rounding 10, surcharge -0.01`},
 
 	h.ProductPricelistItem().Methods().OnchangeAppliedOn().DeclareMethod(
 		`OnchangeAppliedOn updates values when the AppliedOn is changed`,
-		func(rs h.ProductPricelistItemSet) *h.ProductPricelistItemData {
+		func(rs m.ProductPricelistItemSet) m.ProductPricelistItemData {
 			res := h.ProductPricelistItem().NewData()
 			if rs.AppliedOn() != "0_product_variant" {
 				res.SetProduct(h.ProductProduct().NewSet(rs.Env()))
@@ -395,7 +395,7 @@ To have prices that end in 9.99, set rounding 10, surcharge -0.01`},
 
 	h.ProductPricelistItem().Methods().OnchangeComputePrice().DeclareMethod(
 		`OnchangeComputePrice updates values when the ComputePrice field is changed`,
-		func(rs h.ProductPricelistItemSet) *h.ProductPricelistItemData {
+		func(rs m.ProductPricelistItemSet) m.ProductPricelistItemData {
 			res := h.ProductPricelistItem().NewData()
 			if rs.ComputePrice() != "fixed" {
 				res.SetFixedPrice(0)

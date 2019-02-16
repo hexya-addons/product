@@ -9,6 +9,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models"
 	"github.com/hexya-erp/hexya/src/tests"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 )
 
@@ -17,28 +18,28 @@ func TestMain(m *testing.M) {
 }
 
 type productTestData struct {
-	partner1    h.PartnerSet
-	uomUnit     h.ProductUomSet
-	uomDozen    h.ProductUomSet
-	uomDunit    h.ProductUomSet
-	uomWeight   h.ProductUomSet
-	product0    h.ProductProductSet
-	product1    h.ProductProductSet
-	product2    h.ProductProductSet
-	product3    h.ProductProductSet
-	product4    h.ProductProductSet
-	product5    h.ProductProductSet
-	product6    h.ProductProductSet
-	product7    h.ProductProductSet
-	product71   h.ProductProductSet
-	product72   h.ProductProductSet
-	product8    h.ProductProductSet
-	product9    h.ProductProductSet
-	product10   h.ProductProductSet
-	template7   h.ProductTemplateSet
-	prodAtt1    h.ProductAttributeSet
-	prodAttr1V1 h.ProductAttributeValueSet
-	prodAttr1V2 h.ProductAttributeValueSet
+	partner1    m.PartnerSet
+	uomUnit     m.ProductUomSet
+	uomDozen    m.ProductUomSet
+	uomDunit    m.ProductUomSet
+	uomWeight   m.ProductUomSet
+	product0    m.ProductProductSet
+	product1    m.ProductProductSet
+	product2    m.ProductProductSet
+	product3    m.ProductProductSet
+	product4    m.ProductProductSet
+	product5    m.ProductProductSet
+	product6    m.ProductProductSet
+	product7    m.ProductProductSet
+	product71   m.ProductProductSet
+	product72   m.ProductProductSet
+	product8    m.ProductProductSet
+	product9    m.ProductProductSet
+	product10   m.ProductProductSet
+	template7   m.ProductTemplateSet
+	prodAtt1    m.ProductAttributeSet
+	prodAttr1V1 m.ProductAttributeValueSet
+	prodAttr1V2 m.ProductAttributeValueSet
 }
 
 func getProductTestData(env models.Environment) *productTestData {

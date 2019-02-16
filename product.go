@@ -19,6 +19,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models/types/dates"
 	"github.com/hexya-erp/hexya/src/tools/b64image"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 )
 
@@ -43,21 +44,21 @@ func init() {
 
 	h.ProductCategory().Methods().ComputeProductCount().DeclareMethod(
 		`ComputeProductCount returns the number of products within this category (not considering children categories)`,
-		func(rs h.ProductCategorySet) *h.ProductCategoryData {
+		func(rs m.ProductCategorySet) m.ProductCategoryData {
 			return h.ProductCategory().NewData().SetProductCount(
 				h.ProductTemplate().Search(rs.Env(), q.ProductTemplate().Category().Equals(rs)).SearchCount())
 		})
 
 	h.ProductCategory().Methods().CheckCategoryRecursion().DeclareMethod(
 		`CheckCategoryRecursion panics if there is a recursion in the category tree.`,
-		func(rs h.ProductCategorySet) {
+		func(rs m.ProductCategorySet) {
 			if !rs.CheckRecursion() {
 				panic(rs.T("Error ! You cannot create recursive categories."))
 			}
 		})
 
 	h.ProductCategory().Methods().NameGet().Extend("",
-		func(rs h.ProductCategorySet) string {
+		func(rs m.ProductCategorySet) string {
 			var names []string
 			for current := rs; !current.IsEmpty(); current = current.Parent() {
 				names = append([]string{current.Name()}, names...)
@@ -66,7 +67,7 @@ func init() {
 		})
 
 	h.ProductCategory().Methods().SearchByName().Extend("",
-		func(rs h.ProductCategorySet, name string, op operator.Operator, additionalCond q.ProductCategoryCondition, limit int) h.ProductCategorySet {
+		func(rs m.ProductCategorySet, name string, op operator.Operator, additionalCond q.ProductCategoryCondition, limit int) m.ProductCategorySet {
 			if name == "" {
 				return rs.Super().SearchByName(name, op, additionalCond, limit)
 			}
@@ -74,7 +75,7 @@ func init() {
 			categoryNames := strings.Split(name, " / ")
 			child := categoryNames[len(categoryNames)-1]
 			cond := q.ProductCategory().Name().AddOperator(op, child)
-			var categories h.ProductCategorySet
+			var categories m.ProductCategorySet
 			if len(categoryNames) > 1 {
 				parents := rs.SearchByName(strings.Join(categoryNames[:len(categoryNames)-1], " / "), operator.IContains, additionalCond, limit)
 				if op.IsNegative() {
@@ -186,14 +187,14 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		- 'partner' => int64 (id of the partner)
 		- 'pricelist' => int64 (id of the price list)
 		- 'quantity' => float64`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			if !rs.Env().Context().HasKey("pricelist") {
-				return new(h.ProductProductData)
+				return h.ProductProduct().NewData()
 			}
 			priceListID := rs.Env().Context().GetInteger("pricelist")
 			priceList := h.ProductPricelist().Browse(rs.Env(), []int64{priceListID})
 			if priceList.IsEmpty() {
-				return new(h.ProductProductData)
+				return h.ProductProduct().NewData()
 			}
 			quantity := rs.Env().Context().GetFloat("quantity")
 			if quantity == 0 {
@@ -207,7 +208,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().InverseProductPrice().DeclareMethod(
 		`InverseProductPrice updates ListPrice from the given Price`,
-		func(rs h.ProductProductSet, price float64) {
+		func(rs m.ProductProductSet, price float64) {
 			if rs.Env().Context().HasKey("uom") {
 				price = h.ProductUom().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("uom")}).ComputePrice(price, rs.Uom())
 			}
@@ -217,7 +218,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().InverseProductLstPrice().DeclareMethod(
 		`InverseProductLstPrice updates ListPrice from the given LstPrice`,
-		func(rs h.ProductProductSet, price float64) {
+		func(rs m.ProductProductSet, price float64) {
 			if rs.Env().Context().HasKey("uom") {
 				price = h.ProductUom().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("uom")}).ComputePrice(price, rs.Uom())
 			}
@@ -227,7 +228,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().ComputeProductPriceExtra().DeclareMethod(
 		`ComputeProductPriceExtra computes the price extra of this product by suming the extras of each attribute`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			var priceExtra float64
 			for _, attributeValue := range rs.AttributeValues().Records() {
 				for _, attributePrice := range attributeValue.Prices().Records() {
@@ -241,7 +242,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().ComputeProductLstPrice().DeclareMethod(
 		`ComputeProductLstPrice computes the LstPrice from the ListPrice and the extras`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			listPrice := rs.ListPrice()
 			if rs.Env().Context().HasKey("uom") {
 				toUoM := h.ProductUom().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("uom")})
@@ -253,7 +254,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 	h.ProductProduct().Methods().ComputeProductCode().DeclareMethod(
 		`ComputeProductCode computes the product code based on the context:
 - 'partner_id' => int64 (id of the considered partner)`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			var code string
 			for _, supplierInfo := range rs.Sellers().Records() {
 				if supplierInfo.Name().ID() == rs.Env().Context().GetInteger("partner_id") {
@@ -270,7 +271,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 	h.ProductProduct().Methods().ComputePartnerRef().DeclareMethod(
 		`ComputePartnerRef computes the product's reference (i.e. "[code] description") based on the context:
 - 'partner_id' => int64 (id of the considered partner)`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			var code, productName string
 			for _, supplierInfo := range rs.Sellers().Records() {
 				if supplierInfo.Name().ID() == rs.Env().Context().GetInteger("partner_id") {
@@ -290,7 +291,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().ComputeImages().DeclareMethod(
 		`ComputeImages computes the images in different sizes.`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			var imageMedium, imageSmall, image string
 			if rs.Env().Context().GetBool("bin_size") {
 				imageMedium = rs.ImageVariant()
@@ -318,7 +319,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().InverseImageValue().DeclareMethod(
 		`InverseImageValue sets all images from the given image`,
-		func(rs h.ProductProductSet, image string) {
+		func(rs m.ProductProductSet, image string) {
 			image = b64image.Resize(image, 1024, 1024, true)
 			if rs.ProductTmpl().Image() == "" {
 				rs.ProductTmpl().SetImage(image)
@@ -329,7 +330,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().GetPricelistItems().DeclareMethod(
 		`GetPricelistItems returns all price list items for this product`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			rs.EnsureOne()
 			priceListItems := h.ProductPricelistItem().Search(rs.Env(),
 				q.ProductPricelistItem().Product().Equals(rs).Or().ProductTmpl().Equals(rs.ProductTmpl()))
@@ -338,7 +339,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().CheckAttributeValueIds().DeclareMethod(
 		`CheckAttributeValueIds checks that we do not have more than one value per attribute.`,
-		func(rs h.ProductProductSet) {
+		func(rs m.ProductProductSet) {
 			attributes := h.ProductAttribute().NewSet(rs.Env())
 			for _, value := range rs.AttributeValues().Records() {
 				if !value.Attribute().Intersect(attributes).IsEmpty() {
@@ -350,7 +351,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().OnchangeUom().DeclareMethod(
 		`OnchangeUom process UI triggers when changing th UoM`,
-		func(rs h.ProductProductSet) *h.ProductProductData {
+		func(rs m.ProductProductSet) m.ProductProductData {
 			if !rs.Uom().IsEmpty() && !rs.UomPo().IsEmpty() && !rs.Uom().Category().Equals(rs.UomPo().Category()) {
 				return h.ProductProduct().NewData().SetUomPo(rs.Uom())
 			}
@@ -358,7 +359,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().Create().Extend("",
-		func(rs h.ProductProductSet, data *h.ProductProductData) h.ProductProductSet {
+		func(rs m.ProductProductSet, data m.ProductProductData) m.ProductProductSet {
 			product := rs.WithContext("create_product_product", true).Super().Create(data)
 			// When a unique variant is created from tmpl then the standard price is set by DefineStandardPrice
 			if !rs.Env().Context().HasKey("create_from_tmpl") && product.ProductTmpl().ProductVariants().Len() == 1 {
@@ -368,7 +369,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().Write().Extend("",
-		func(rs h.ProductProductSet, data *h.ProductProductData) bool {
+		func(rs m.ProductProductSet, data m.ProductProductData) bool {
 			// Store the standard price change in order to be able to retrieve the cost of a product for a given date
 			res := rs.Super().Write(data)
 			if data.HasStandardPrice() {
@@ -378,7 +379,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().Unlink().Extend("",
-		func(rs h.ProductProductSet) int64 {
+		func(rs m.ProductProductSet) int64 {
 			unlinkProducts := h.ProductProduct().NewSet(rs.Env())
 			unlinkTemplates := h.ProductTemplate().NewSet(rs.Env())
 			for _, product := range rs.Records() {
@@ -399,7 +400,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().UnlinkOrDeactivate().DeclareMethod(
 		`UnlinkOrDeactivate tries to unlink this product. If it fails, it simply deactivate it.`,
-		func(rs h.ProductProductSet) {
+		func(rs m.ProductProductSet) {
 			defer func() {
 				if r := recover(); r != nil {
 					rs.SetActive(false)
@@ -409,7 +410,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().Copy().Extend("",
-		func(rs h.ProductProductSet, overrides *h.ProductProductData) h.ProductProductSet {
+		func(rs m.ProductProductSet, overrides m.ProductProductData) m.ProductProductSet {
 			if rs.Env().Context().HasKey("variant") {
 				// if we copy a variant or create one, we keep the same template
 				overrides.SetProductTmpl(rs.ProductTmpl())
@@ -420,7 +421,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().Search().Extend("",
-		func(rs h.ProductProductSet, cond q.ProductProductCondition) h.ProductProductSet {
+		func(rs m.ProductProductSet, cond q.ProductProductCondition) m.ProductProductSet {
 			// FIXME: strange...
 			if categID := rs.Env().Context().GetInteger("search_default_category_id"); categID != 0 {
 				categ := h.ProductCategory().Browse(rs.Env(), []int64{categID})
@@ -431,7 +432,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().NameFormat().DeclareMethod(
 		`NameFormat formats a product name string from the given arguments`,
-		func(rs h.ProductProductSet, name, code string) string {
+		func(rs m.ProductProductSet, name, code string) string {
 			if code == "" ||
 				(rs.Env().Context().HasKey("display_default_code") && !rs.Env().Context().GetBool("display_default_code")) {
 				return name
@@ -440,7 +441,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().NameGet().Extend("",
-		func(rs h.ProductProductSet) string {
+		func(rs m.ProductProductSet) string {
 			/*
 			   def _name_get(d):
 			       name = d.get('name', '')
@@ -509,7 +510,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 		})
 
 	h.ProductProduct().Methods().SearchByName().Extend("",
-		func(rs h.ProductProductSet, name string, op operator.Operator, additionalCond q.ProductProductCondition, limit int) h.ProductProductSet {
+		func(rs m.ProductProductSet, name string, op operator.Operator, additionalCond q.ProductProductCondition, limit int) m.ProductProductSet {
 			if name == "" {
 				return rs.Super().SearchByName(name, op, additionalCond, limit)
 			}
@@ -564,7 +565,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().OpenProductTemplate().DeclareMethod(
 		`OpenProductTemplate is a utility method used to add an "Open Template" button in product views`,
-		func(rs h.ProductProductSet) *actions.Action {
+		func(rs m.ProductProductSet) *actions.Action {
 			rs.EnsureOne()
 			return &actions.Action{
 				Type:     actions.ActionActWindow,
@@ -578,7 +579,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 	h.ProductProduct().Methods().SelectSeller().DeclareMethod(
 		`SelectSeller returns the ProductSupplierInfo to use for the given partner, quantity, date and UoM.
 		If any of the parameters are their Go zero value, then they are not used for filtering.`,
-		func(rs h.ProductProductSet, partner h.PartnerSet, quantity float64, date dates.Date, uom h.ProductUomSet) h.ProductSupplierinfoSet {
+		func(rs m.ProductProductSet, partner m.PartnerSet, quantity float64, date dates.Date, uom m.ProductUomSet) m.ProductSupplierinfoSet {
 			rs.EnsureOne()
 			if date.IsZero() {
 				date = dates.Today()
@@ -613,7 +614,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 	h.ProductProduct().Methods().PriceCompute().DeclareMethod(
 		`PriceCompute returns the price field defined by priceType in the given uom and currency
 		for the given company.`,
-		func(rs h.ProductProductSet, priceType models.FieldNamer, uom h.ProductUomSet, currency h.CurrencySet, company h.CompanySet) float64 {
+		func(rs m.ProductProductSet, priceType models.FieldNamer, uom m.ProductUomSet, currency m.CurrencySet, company m.CompanySet) float64 {
 			rs.EnsureOne()
 			// FIXME: delegate to template or not ? fields are reencoded here ...
 			// compatibility about context keys used a bit everywhere in the code
@@ -657,7 +658,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 	h.ProductProduct().Methods().DefineStandardPrice().DeclareMethod(
 		`DefineStandardPrice stores the standard price change in order to be able to retrieve the cost of a product for
 		a given date`,
-		func(rs h.ProductProductSet, value float64) {
+		func(rs m.ProductProductSet, value float64) {
 			company := h.User().NewSet(rs.Env()).CurrentUser().Company()
 			if rs.Env().Context().HasKey("force_company") {
 				company = h.Company().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("force_company")})
@@ -672,7 +673,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().GetHistoryPrice().DeclareMethod(
 		`GetHistoryPrice returns the standard price of this product for the given company at the given date`,
-		func(rs h.ProductProductSet, company h.CompanySet, date dates.DateTime) float64 {
+		func(rs m.ProductProductSet, company m.CompanySet, date dates.DateTime) float64 {
 			if date.IsZero() {
 				date = dates.Now()
 			}
@@ -685,7 +686,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().NeedProcurement().DeclareMethod(
 		`NeedProcurement`,
-		func(rs h.ProductProductSet) bool {
+		func(rs m.ProductProductSet) bool {
 			// When sale/product is installed alone, there is no need to create procurements. Only
 			// sale_stock and sale_service need procurements
 			return false

@@ -15,6 +15,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models/types/dates"
 	"github.com/hexya-erp/hexya/src/tools/b64image"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 )
 
@@ -151,14 +152,14 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().ComputeProductVariant().DeclareMethod(
 		`ComputeProductVariant returns the first variant of this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			return h.ProductTemplate().NewData().
 				SetProductVariant(rs.ProductVariants().Records()[0])
 		})
 
 	h.ProductTemplate().Methods().ComputeCurrency().DeclareMethod(
 		`ComputeCurrency computes the currency of this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			mainCompany := h.Company().NewSet(rs.Env()).Sudo().Search(
 				q.Company().HexyaExternalID().Equals("base_main_company"))
 			if mainCompany.IsEmpty() {
@@ -177,14 +178,14 @@ Use this field anywhere a small image is required.`},
 		- 'partner' => int64 (id of the partner)
 		- 'pricelist' => int64 (id of the price list)
 		- 'quantity' => float64`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			if !rs.Env().Context().HasKey("pricelist") {
-				return new(h.ProductTemplateData)
+				return h.ProductTemplate().NewData()
 			}
 			priceListID := rs.Env().Context().GetInteger("pricelist")
 			priceList := h.ProductPricelist().Browse(rs.Env(), []int64{priceListID})
 			if priceList.IsEmpty() {
-				return new(h.ProductTemplateData)
+				return h.ProductTemplate().NewData()
 			}
 			partnerID := rs.Env().Context().GetInteger("partner")
 			partner := h.Partner().Browse(rs.Env(), []int64{partnerID})
@@ -198,7 +199,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().InverseTemplatePrice().DeclareMethod(
 		`InverseTemplatePrice sets the template's price`,
-		func(rs h.ProductTemplateSet, price float64) {
+		func(rs m.ProductTemplateSet, price float64) {
 			if rs.Env().Context().HasKey("uom") {
 				uom := h.ProductUom().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("uom")})
 				value := uom.ComputePrice(price, rs.Uom())
@@ -210,7 +211,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().ComputeStandardPrice().DeclareMethod(
 		`ComputeStandardPrice returns the standard price for this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			if rs.ProductVariants().Len() == 1 {
 				return h.ProductTemplate().NewData().
 					SetStandardPrice(rs.ProductVariant().StandardPrice())
@@ -220,7 +221,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().InverseStandardPrice().DeclareMethod(
 		`InverseStandardPrice sets this template's standard price`,
-		func(rs h.ProductTemplateSet, price float64) {
+		func(rs m.ProductTemplateSet, price float64) {
 			if rs.ProductVariants().Len() == 1 {
 				rs.ProductVariant().SetStandardPrice(price)
 			}
@@ -228,7 +229,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().ComputeVolume().DeclareMethod(
 		`ComputeVolume compute the volume of this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			if rs.ProductVariants().Len() == 1 {
 				return h.ProductTemplate().NewData().
 					SetVolume(rs.ProductVariant().Volume())
@@ -238,7 +239,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().InverseVolume().DeclareMethod(
 		`InverseVolume sets this template's volume`,
-		func(rs h.ProductTemplateSet, volume float64) {
+		func(rs m.ProductTemplateSet, volume float64) {
 			if rs.ProductVariants().Len() == 1 {
 				rs.ProductVariant().SetVolume(volume)
 			}
@@ -246,7 +247,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().ComputeWeight().DeclareMethod(
 		`ComputeWeight compute the weight of this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			if rs.ProductVariants().Len() == 1 {
 				return h.ProductTemplate().NewData().
 					SetWeight(rs.ProductVariant().Weight())
@@ -256,7 +257,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().InverseWeight().DeclareMethod(
 		`InverseWeightsets this template's weight`,
-		func(rs h.ProductTemplateSet, weight float64) {
+		func(rs m.ProductTemplateSet, weight float64) {
 			if rs.ProductVariants().Len() == 1 {
 				rs.ProductVariant().SetWeight(weight)
 			}
@@ -264,14 +265,14 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().ComputeProductVariantCount().DeclareMethod(
 		`ComputeProductVariantCount returns the number of variants for this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			return h.ProductTemplate().NewData().
 				SetProductVariantCount(rs.ProductVariants().Len())
 		})
 
 	h.ProductTemplate().Methods().ComputeDefaultCode().DeclareMethod(
 		`ComputeDefaultCode returns the default code for this template`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			res := h.ProductTemplate().NewData()
 			if rs.ProductVariants().Len() == 1 {
 				res.SetDefaultCode(rs.ProductVariant().DefaultCode())
@@ -281,7 +282,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().InverseDefaultCode().DeclareMethod(
 		`InverseDefaultCode sets the default code of this template`,
-		func(rs h.ProductTemplateSet, code string) {
+		func(rs m.ProductTemplateSet, code string) {
 			if rs.ProductVariants().Len() == 1 {
 				rs.ProductVariant().SetDefaultCode(code)
 			}
@@ -289,7 +290,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().CheckUom().DeclareMethod(
 		`CheckUom checks that this template's uom is of the same category as the purchase uom`,
-		func(rs h.ProductTemplateSet) {
+		func(rs m.ProductTemplateSet) {
 			if !rs.Uom().IsEmpty() && !rs.UomPo().IsEmpty() && !rs.Uom().Category().Equals(rs.UomPo().Category()) {
 				log.Panic(rs.T("Error: The default Unit of Measure and the purchase Unit of Measure must be in the same category."))
 			}
@@ -297,7 +298,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().OnchangeUom().DeclareMethod(
 		`OnchangeUom updates UomPo when uom is changed`,
-		func(rs h.ProductTemplateSet) *h.ProductTemplateData {
+		func(rs m.ProductTemplateSet) m.ProductTemplateData {
 			res := h.ProductTemplate().NewData()
 			if !rs.Uom().IsEmpty() {
 				res.SetUomPo(rs.Uom())
@@ -307,7 +308,7 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().ResizeImageData().DeclareMethod(
 		`ResizeImageData returns the given data struct with images set for the different sizes.`,
-		func(set h.ProductTemplateSet, data *h.ProductTemplateData) {
+		func(set m.ProductTemplateSet, data m.ProductTemplateData) {
 			switch {
 			case data.Image() != "":
 				data.SetImage(b64image.Resize(data.Image(), 1024, 1024, true))
@@ -325,7 +326,7 @@ Use this field anywhere a small image is required.`},
 		})
 
 	h.ProductTemplate().Methods().Create().Extend("",
-		func(rs h.ProductTemplateSet, data *h.ProductTemplateData) h.ProductTemplateSet {
+		func(rs m.ProductTemplateSet, data m.ProductTemplateData) m.ProductTemplateSet {
 			rs.ResizeImageData(data)
 			template := rs.Super().Create(data)
 			if !rs.Env().Context().HasKey("create_product_product") {
@@ -353,7 +354,7 @@ Use this field anywhere a small image is required.`},
 		})
 
 	h.ProductTemplate().Methods().Write().Extend("",
-		func(rs h.ProductTemplateSet, vals *h.ProductTemplateData) bool {
+		func(rs m.ProductTemplateSet, vals m.ProductTemplateData) bool {
 			rs.ResizeImageData(vals)
 			res := rs.Super().Write(vals)
 			if vals.HasAttributeLines() || vals.Active() {
@@ -366,7 +367,7 @@ Use this field anywhere a small image is required.`},
 		})
 
 	h.ProductTemplate().Methods().Copy().Extend("",
-		func(rs h.ProductTemplateSet, overrides *h.ProductTemplateData) h.ProductTemplateSet {
+		func(rs m.ProductTemplateSet, overrides m.ProductTemplateData) m.ProductTemplateSet {
 			rs.EnsureOne()
 			if !overrides.HasName() {
 				overrides.SetName(rs.T("%s (Copy)", rs.Name()))
@@ -375,12 +376,12 @@ Use this field anywhere a small image is required.`},
 		})
 
 	h.ProductTemplate().Methods().NameGet().Extend("",
-		func(rs h.ProductTemplateSet) string {
+		func(rs m.ProductTemplateSet) string {
 			return h.ProductProduct().NewSet(rs.Env()).NameFormat(rs.Name(), rs.DefaultCode())
 		})
 
 	h.ProductTemplate().Methods().SearchByName().Extend("",
-		func(rs h.ProductTemplateSet, name string, op operator.Operator, additionalCond q.ProductTemplateCondition, limit int) h.ProductTemplateSet {
+		func(rs m.ProductTemplateSet, name string, op operator.Operator, additionalCond q.ProductTemplateCondition, limit int) m.ProductTemplateSet {
 			// Only use the product.product heuristics if there is a search term and the domain
 			// does not specify a match on `product.template` IDs.
 			if name == "" {
@@ -414,7 +415,7 @@ Use this field anywhere a small image is required.`},
 	h.ProductTemplate().Methods().PriceCompute().DeclareMethod(
 		`PriceCompute returns the price field defined by priceType in the given uom and currency
 		for the given company.`,
-		func(rs h.ProductTemplateSet, priceType models.FieldNamer, uom h.ProductUomSet, currency h.CurrencySet, company h.CompanySet) float64 {
+		func(rs m.ProductTemplateSet, priceType models.FieldNamer, uom m.ProductUomSet, currency m.CurrencySet, company m.CompanySet) float64 {
 			rs.EnsureOne()
 			template := rs
 			if priceType == q.ProductTemplate().StandardPrice() {
@@ -443,16 +444,16 @@ Use this field anywhere a small image is required.`},
 
 	h.ProductTemplate().Methods().CreateVariants().DeclareMethod(
 		`CreateVariants`,
-		func(rs h.ProductTemplateSet) {
+		func(rs m.ProductTemplateSet) {
 			for _, tmpl := range rs.WithContext("active_test", false).Records() {
 				// adding an attribute with only one value should not recreate product
 				// write this attribute on every product to make sure we don't lose them
-				variantAloneLines := tmpl.AttributeLines().Filtered(func(r h.ProductAttributeLineSet) bool {
+				variantAloneLines := tmpl.AttributeLines().Filtered(func(r m.ProductAttributeLineSet) bool {
 					return r.Attribute().CreateVariant() && r.Values().Len() == 1
 				})
 				for _, v := range variantAloneLines.Records() {
 					value := v.Values()
-					updatedProducts := tmpl.ProductVariants().Filtered(func(r h.ProductProductSet) bool {
+					updatedProducts := tmpl.ProductVariants().Filtered(func(r m.ProductProductSet) bool {
 						prodAttrs := h.ProductAttribute().NewSet(rs.Env())
 						for _, pa := range r.AttributeValues().Records() {
 							prodAttrs = prodAttrs.Union(pa.Attribute())
@@ -465,7 +466,7 @@ Use this field anywhere a small image is required.`},
 				}
 
 				// list of values combination
-				var existingVariants []h.ProductAttributeValueSet
+				var existingVariants []m.ProductAttributeValueSet
 				for _, prod := range tmpl.ProductVariants().Records() {
 					prodVariant := h.ProductAttributeValue().NewSet(rs.Env())
 					for _, attrVal := range prod.AttributeValues().Records() {
@@ -475,21 +476,21 @@ Use this field anywhere a small image is required.`},
 					}
 					existingVariants = append(existingVariants, prodVariant)
 				}
-				var matrixValues []h.ProductAttributeValueSet
+				var matrixValues []m.ProductAttributeValueSet
 				for _, attrLine := range tmpl.AttributeLines().Records() {
 					if !attrLine.Attribute().CreateVariant() {
 						continue
 					}
 					matrixValues = append(matrixValues, attrLine.Values())
 				}
-				var variantMatrix []h.ProductAttributeValueSet
+				var variantMatrix []m.ProductAttributeValueSet
 				if len(matrixValues) > 0 {
 					variantMatrix = matrixValues[0].CartesianProduct(matrixValues[1:]...)
 				} else {
-					variantMatrix = []h.ProductAttributeValueSet{h.ProductAttributeValue().NewSet(rs.Env())}
+					variantMatrix = []m.ProductAttributeValueSet{h.ProductAttributeValue().NewSet(rs.Env())}
 				}
 
-				var toCreateVariants []h.ProductAttributeValueSet
+				var toCreateVariants []m.ProductAttributeValueSet
 				for _, mVariant := range variantMatrix {
 					var exists bool
 					for _, eVariant := range existingVariants {

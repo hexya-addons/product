@@ -12,6 +12,7 @@ import (
 	"github.com/hexya-erp/hexya/src/models"
 	"github.com/hexya-erp/hexya/src/models/operator"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 )
 
@@ -56,7 +57,7 @@ func init() {
 	h.ProductAttributeValue().Methods().ComputePriceExtra().DeclareMethod(
 		`ComputePriceExtra returns the price extra for this attribute for the product
 		template passed as 'active_id' in the context. Returns 0 if there is not 'active_id'.`,
-		func(rs h.ProductAttributeValueSet) *h.ProductAttributeValueData {
+		func(rs m.ProductAttributeValueSet) m.ProductAttributeValueData {
 			var priceExtra float64
 			if rs.Env().Context().HasKey("active_id") {
 				productTmpl := h.ProductTemplate().Browse(rs.Env(), []int64{rs.Env().Context().GetInteger("active_id")})
@@ -69,7 +70,7 @@ func init() {
 	h.ProductAttributeValue().Methods().InversePriceExtra().DeclareMethod(
 		`InversePriceExtra sets the price extra based on the product
 		template passed as 'active_id'. Does nothing if there is not 'active_id'.`,
-		func(rs h.ProductAttributeValueSet, value float64) {
+		func(rs m.ProductAttributeValueSet, value float64) {
 			if !rs.Env().Context().HasKey("active_id") {
 				return
 			}
@@ -93,7 +94,7 @@ func init() {
 		})
 
 	h.ProductAttributeValue().Methods().NameGet().Extend("",
-		func(rs h.ProductAttributeValueSet) string {
+		func(rs m.ProductAttributeValueSet) string {
 			if rs.Env().Context().HasKey("show_attribute") && !rs.Env().Context().GetBool("show_attribute") {
 				return rs.Super().NameGet()
 			}
@@ -101,7 +102,7 @@ func init() {
 		})
 
 	h.ProductAttributeValue().Methods().Unlink().Extend("",
-		func(rs h.ProductAttributeValueSet) int64 {
+		func(rs m.ProductAttributeValueSet) int64 {
 			linkedProducts := h.ProductProduct().NewSet(rs.Env()).WithContext("active_test", false).Search(
 				q.ProductProduct().AttributeValues().In(rs))
 			if !linkedProducts.IsEmpty() {
@@ -114,9 +115,9 @@ You are trying to delete an attribute value with a reference on a product varian
 	h.ProductAttributeValue().Methods().VariantName().DeclareMethod(
 		`VariantName returns a comma separated list of this product's
 		attributes values of the given variable attributes'`,
-		func(rs h.ProductAttributeValueSet, variableAttribute h.ProductAttributeSet) string {
+		func(rs m.ProductAttributeValueSet, variableAttribute m.ProductAttributeSet) string {
 			var names []string
-			rSet := rs.Sorted(func(rs1, rs2 h.ProductAttributeValueSet) bool {
+			rSet := rs.Sorted(func(rs1, rs2 m.ProductAttributeValueSet) bool {
 				return rs1.Attribute().Name() < rs2.Attribute().Name()
 			})
 			for _, attrValue := range rSet.Records() {
@@ -154,7 +155,7 @@ You are trying to delete an attribute value with a reference on a product varian
 
 	h.ProductAttributeLine().Methods().ComputeName().DeclareMethod(
 		`Name returns a standard name with the attribute name and the values for searching`,
-		func(rs h.ProductAttributeLineSet) *h.ProductAttributeLineData {
+		func(rs m.ProductAttributeLineSet) m.ProductAttributeLineData {
 			var values []string
 			for _, value := range rs.Values().Records() {
 				values = append(values, value.Name())
@@ -165,7 +166,7 @@ You are trying to delete an attribute value with a reference on a product varian
 
 	h.ProductAttributeLine().Methods().CheckValidAttribute().DeclareMethod(
 		`CheckValidAttribute check that attributes values are valid for the given attributes.`,
-		func(rs h.ProductAttributeLineSet) {
+		func(rs m.ProductAttributeLineSet) {
 			for _, line := range rs.Records() {
 				if !line.Values().Subtract(line.Attribute().Values()).IsEmpty() {
 					log.Panic(rs.T("Error ! You cannot use this attribute with the following value."))
@@ -174,12 +175,12 @@ You are trying to delete an attribute value with a reference on a product varian
 		})
 
 	h.ProductAttributeLine().Methods().NameGet().Extend("",
-		func(rs h.ProductAttributeLineSet) string {
+		func(rs m.ProductAttributeLineSet) string {
 			return rs.Attribute().NameGet()
 		})
 
 	h.ProductAttributeLine().Methods().SearchByName().Extend("",
-		func(rs h.ProductAttributeLineSet, name string, op operator.Operator, additionalCond q.ProductAttributeLineCondition, limit int) h.ProductAttributeLineSet {
+		func(rs m.ProductAttributeLineSet, name string, op operator.Operator, additionalCond q.ProductAttributeLineCondition, limit int) m.ProductAttributeLineSet {
 			// TDE FIXME: currently overriding the domain; however as it includes a
 			// search on a m2o and one on a m2m, probably this will quickly become
 			// difficult to compute - check if performance optimization is required

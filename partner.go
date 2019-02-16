@@ -7,6 +7,7 @@ import (
 	"github.com/hexya-addons/base"
 	"github.com/hexya-erp/hexya/src/models"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 	"github.com/hexya-erp/pool/q"
 )
 
@@ -24,10 +25,10 @@ func init() {
 
 	h.Partner().Methods().ComputeProductPricelist().DeclareMethod(
 		`ComputeProductPricelist returns the price list applicable for this partner`,
-		func(rs h.PartnerSet) *h.PartnerData {
+		func(rs m.PartnerSet) m.PartnerData {
 			if rs.ID() == 0 {
 				// We are processing an Onchange
-				return new(h.PartnerData)
+				return h.Partner().NewData()
 			}
 			company := h.User().NewSet(rs.Env()).CurrentUser().Company()
 			return h.Partner().NewData().SetPropertyProductPricelist(
@@ -36,8 +37,8 @@ func init() {
 
 	h.Partner().Methods().InverseProductPricelist().DeclareMethod(
 		`InverseProductPricelist sets the price list for this partner to the given list`,
-		func(rs h.PartnerSet, priceList h.ProductPricelistSet) {
-			var defaultForCountry h.ProductPricelistSet
+		func(rs m.PartnerSet, priceList m.ProductPricelistSet) {
+			var defaultForCountry m.ProductPricelistSet
 			if !rs.Country().IsEmpty() {
 				defaultForCountry = h.ProductPricelist().Search(rs.Env(),
 					q.ProductPricelist().CountryGroupsFilteredOn(
@@ -59,7 +60,7 @@ func init() {
 
 	h.Partner().Methods().CommercialFields().Extend(
 		`CommercialFields`,
-		func(rs h.PartnerSet) []models.FieldNamer {
+		func(rs m.PartnerSet) []models.FieldNamer {
 			return append(rs.Super().CommercialFields(), q.Partner().PropertyProductPricelist())
 		})
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/hexya-erp/hexya/src/actions"
 	"github.com/hexya-erp/hexya/src/models"
 	"github.com/hexya-erp/pool/h"
+	"github.com/hexya-erp/pool/m"
 )
 
 func init() {
@@ -24,7 +25,7 @@ func init() {
 
 	h.ProductPriceListWizard().Methods().PrintReport().DeclareMethod(
 		`PrintReport returns the report action from the data in this popup (not implemented)`,
-		func(rs h.ProductPriceListWizardSet) *actions.Action {
+		func(rs m.ProductPriceListWizardSet) *actions.Action {
 			// TODO implement with reports
 			return &actions.Action{
 				Type: actions.ActionCloseWindow,
