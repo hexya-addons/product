@@ -33,7 +33,7 @@ func init() {
 			ReverseFK: "Pricelist", JSON: "item_ids", Copy: true,
 			Default: func(env models.Environment) interface{} {
 				listItems := h.ProductPricelistItem().NewSet(env)
-				values := h.ProductPricelistItem().NewData(listItems.DefaultGet())
+				values := listItems.DefaultGet()
 				values.SetComputePrice("formula")
 				return listItems.Create(values)
 			}},

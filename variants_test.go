@@ -17,7 +17,7 @@ import (
 
 func TestVariantsSearch(t *testing.T) {
 	Convey("Testing search on variants", t, func() {
-		So(models.SimulateInNewEnvironment(security.SuperUserID, func(env models.Environment) {
+		So(models.ExecuteInNewEnvironment(security.SuperUserID, func(env models.Environment) {
 			sizeAttr := h.ProductAttribute().Create(env, h.ProductAttribute().NewData().SetName("Size"))
 			h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().
 				SetName("S").
@@ -31,9 +31,9 @@ func TestVariantsSearch(t *testing.T) {
 			productShirtTemplate :=
 				h.ProductTemplate().Create(env, h.ProductTemplate().NewData().
 					SetName("Shirt").
-					SetAttributeLines(h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
+					CreateAttributeLines(h.ProductAttributeLine().NewData().
 						SetAttribute(sizeAttr).
-						SetValues(sizeAttreValueL))))
+						SetValues(sizeAttreValueL)))
 			Convey("Test Attribute line search", func() {
 				searchNotToBeFound := h.ProductTemplate().Search(env, q.ProductTemplate().AttributeLines().ContainsEval("M"))
 				So(productShirtTemplate.Intersect(searchNotToBeFound).IsEmpty(), ShouldBeTrue)
@@ -73,10 +73,9 @@ func TestVariants(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
-						h.ProductAttributeLine().NewData().
-							SetAttribute(sizeAttr).
-							SetValues(sizeAttreValueS))))
+					CreateAttributeLines(h.ProductAttributeLine().NewData().
+						SetAttribute(sizeAttr).
+						SetValues(sizeAttreValueS)))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 1)
 				So(testTemplate.ProductVariant().AttributeValues().Len(), ShouldEqual, 1)
 				So(testTemplate.ProductVariant().AttributeValues().Equals(sizeAttreValueS), ShouldBeTrue)
@@ -86,14 +85,12 @@ func TestVariants(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
-						h.ProductAttributeLine().NewData().
-							SetAttribute(sizeAttr).
-							SetValues(sizeAttreValueS)).
-						Union(
-							h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-								SetAttribute(ptd.prodAtt1).
-								SetValues(ptd.prodAttr1V2)))))
+					CreateAttributeLines(h.ProductAttributeLine().NewData().
+						SetAttribute(sizeAttr).
+						SetValues(sizeAttreValueS)).
+					CreateAttributeLines(h.ProductAttributeLine().NewData().
+						SetAttribute(ptd.prodAtt1).
+						SetValues(ptd.prodAttr1V2)))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 1)
 				So(testTemplate.ProductVariant().AttributeValues().Len(), ShouldEqual, 2)
 				So(testTemplate.ProductVariant().AttributeValues().Equals(sizeAttreValueS.Union(ptd.prodAttr1V2)), ShouldBeTrue)
@@ -103,14 +100,14 @@ func TestVariants(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(sizeAttr).
 							SetValues(sizeAttreValueS.Union(sizeAttreValueM))).
-						Union(
-							h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-								SetAttribute(ptd.prodAtt1).
-								SetValues(ptd.prodAttr1V2)))))
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
+							SetAttribute(ptd.prodAtt1).
+							SetValues(ptd.prodAttr1V2)))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 2)
 				productVariants := h.ProductProduct().Search(env,
 					q.ProductProduct().ProductTmpl().Equals(testTemplate).
@@ -135,14 +132,14 @@ func TestVariants(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(sizeAttr).
 							SetValues(sizeAttreValueS.Union(sizeAttreValueM).Union(sizeAttreValueL))).
-						Union(
-							h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-								SetAttribute(ptd.prodAtt1).
-								SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))))
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
+							SetAttribute(ptd.prodAtt1).
+							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 6)
 				for _, value1 := range []m.ProductAttributeValueSet{ptd.prodAttr1V1, ptd.prodAttr1V2} {
 					productVariants := h.ProductProduct().Search(env,
@@ -162,13 +159,13 @@ func TestVariants(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(sizeAttr).
 							SetValues(sizeAttreValueS.Union(sizeAttreValueM))).
-						Union(h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-							SetAttribute(ptd.prodAtt1).
-							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))))
+					CreateAttributeLines(h.ProductAttributeLine().NewData().
+						SetAttribute(ptd.prodAtt1).
+						SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))
 				So(testTemplate.ProductVariants().Len(), ShouldEqual, 4)
 				sizeAttributeLine := testTemplate.AttributeLines().Filtered(func(rs m.ProductAttributeLineSet) bool {
 					return rs.Attribute().Equals(sizeAttr)
@@ -197,23 +194,28 @@ func TestVariants(t *testing.T) {
 func TestVariantsNoCreate(t *testing.T) {
 	Convey("Testing variants no create", t, func() {
 		So(models.SimulateInNewEnvironment(security.SuperUserID, func(env models.Environment) {
-			sizeS := h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().SetName("S"))
-			sizeM := h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().SetName("M"))
-			sizeL := h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().SetName("L"))
 			size := h.ProductAttribute().Create(env, h.ProductAttribute().NewData().
 				SetName("Size").
-				SetCreateVariant(false).
-				SetValues(sizeS.Union(sizeM).Union(sizeL)))
+				SetCreateVariant(false))
+			sizeS := h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().
+				SetName("S").
+				SetAttribute(size))
+			h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().
+				SetName("M").
+				SetAttribute(size))
+			h.ProductAttributeValue().Create(env, h.ProductAttributeValue().NewData().
+				SetName("L").
+				SetAttribute(size))
 			ptd := getProductTestData(env)
 			Convey("Create a product with a 'nocreate' attribute with a single value", func() {
 				template := h.ProductTemplate().Create(env, h.ProductTemplate().NewData().
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(size).
-							SetValues(sizeS))))
+							SetValues(sizeS)))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
 				So(template.ProductVariant().AttributeValues().IsEmpty(), ShouldBeTrue)
 			})
@@ -223,9 +225,10 @@ func TestVariantsNoCreate(t *testing.T) {
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
-				template.SetAttributeLines(h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-					SetAttribute(size).
-					SetValues(sizeS)))
+				template.Write(h.ProductTemplate().NewData().
+					CreateAttributeLines(h.ProductAttributeLine().NewData().
+						SetAttribute(size).
+						SetValues(sizeS)))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
 				So(template.ProductVariant().AttributeValues().IsEmpty(), ShouldBeTrue)
 			})
@@ -234,10 +237,10 @@ func TestVariantsNoCreate(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(size).
-							SetValues(size.Values()))))
+							SetValues(size.Values())))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
 				So(template.ProductVariant().AttributeValues().IsEmpty(), ShouldBeTrue)
 			})
@@ -248,7 +251,7 @@ func TestVariantsNoCreate(t *testing.T) {
 						SetUom(ptd.uomUnit).
 						SetUomPo(ptd.uomUnit))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
-				template.SetAttributeLines(h.ProductAttributeLine().Create(env,
+				template.Write(h.ProductTemplate().NewData().CreateAttributeLines(
 					h.ProductAttributeLine().NewData().
 						SetAttribute(size).
 						SetValues(size.Values())))
@@ -260,14 +263,14 @@ func TestVariantsNoCreate(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(size).
 							SetValues(sizeS)).
-						Union(
-							h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-								SetAttribute(ptd.prodAtt1).
-								SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))))
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
+							SetAttribute(ptd.prodAtt1).
+							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))
 				So(template.ProductVariants().Len(), ShouldEqual, 2)
 				for _, variant := range template.ProductVariants().Records() {
 					So(variant.AttributeValues().Len(), ShouldEqual, 1)
@@ -280,14 +283,15 @@ func TestVariantsNoCreate(t *testing.T) {
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
-				template.SetAttributeLines(h.ProductAttributeLine().Create(env,
-					h.ProductAttributeLine().NewData().
-						SetAttribute(size).
-						SetValues(sizeS)).
-					Union(
-						h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
+				template.Write(h.ProductTemplate().NewData().
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
+							SetAttribute(size).
+							SetValues(sizeS)).
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
 							SetAttribute(ptd.prodAtt1).
-							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2)))))
+							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))
 				So(template.ProductVariants().Len(), ShouldEqual, 2)
 				for _, variant := range template.ProductVariants().Records() {
 					So(variant.AttributeValues().Len(), ShouldEqual, 1)
@@ -299,14 +303,14 @@ func TestVariantsNoCreate(t *testing.T) {
 					SetName("Sofa").
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit).
-					SetAttributeLines(h.ProductAttributeLine().Create(env,
+					CreateAttributeLines(
 						h.ProductAttributeLine().NewData().
 							SetAttribute(size).
 							SetValues(size.Values())).
-						Union(
-							h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-								SetAttribute(ptd.prodAtt1).
-								SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))))
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
+							SetAttribute(ptd.prodAtt1).
+							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))
 				So(template.ProductVariants().Len(), ShouldEqual, 2)
 				for _, variant := range template.ProductVariants().Records() {
 					So(variant.AttributeValues().Len(), ShouldEqual, 1)
@@ -319,14 +323,15 @@ func TestVariantsNoCreate(t *testing.T) {
 					SetUom(ptd.uomUnit).
 					SetUomPo(ptd.uomUnit))
 				So(template.ProductVariants().Len(), ShouldEqual, 1)
-				template.SetAttributeLines(h.ProductAttributeLine().Create(env,
-					h.ProductAttributeLine().NewData().
-						SetAttribute(size).
-						SetValues(size.Values())).
-					Union(
-						h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
+				template.Write(h.ProductTemplate().NewData().
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
+							SetAttribute(size).
+							SetValues(size.Values())).
+					CreateAttributeLines(
+						h.ProductAttributeLine().NewData().
 							SetAttribute(ptd.prodAtt1).
-							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2)))))
+							SetValues(ptd.prodAttr1V1.Union(ptd.prodAttr1V2))))
 				So(template.ProductVariants().Len(), ShouldEqual, 2)
 				for _, variant := range template.ProductVariants().Records() {
 					So(variant.AttributeValues().Len(), ShouldEqual, 1)

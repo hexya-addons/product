@@ -99,8 +99,8 @@ func getProductTestData(env models.Environment) *productTestData {
 		SetName("Sofa").
 		SetUom(ptd.uomUnit).
 		SetUomPo(ptd.uomUnit).
-		SetAttributeLines(h.ProductAttributeLine().Create(env, h.ProductAttributeLine().NewData().
-			SetAttribute(ptd.prodAtt1))))
+		CreateAttributeLines(h.ProductAttributeLine().NewData().
+			SetAttribute(ptd.prodAtt1)))
 	ptd.product7 = h.ProductProduct().Create(env, h.ProductProduct().NewData().
 		SetProductTmpl(ptd.template7))
 	ptd.product71 = h.ProductProduct().Create(env, h.ProductProduct().NewData().

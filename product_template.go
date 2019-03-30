@@ -291,7 +291,7 @@ Use this field anywhere a small image is required.`},
 	h.ProductTemplate().Methods().CheckUom().DeclareMethod(
 		`CheckUom checks that this template's uom is of the same category as the purchase uom`,
 		func(rs m.ProductTemplateSet) {
-			if !rs.Uom().IsEmpty() && !rs.UomPo().IsEmpty() && !rs.Uom().Category().Equals(rs.UomPo().Category()) {
+			if rs.Uom().IsNotEmpty() && rs.UomPo().IsNotEmpty() && !rs.Uom().Category().Equals(rs.UomPo().Category()) {
 				log.Panic(rs.T("Error: The default Unit of Measure and the purchase Unit of Measure must be in the same category."))
 			}
 		})
