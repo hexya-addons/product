@@ -253,7 +253,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().ComputeProductCode().DeclareMethod(
 		`ComputeProductCode computes the product code based on the context:
-- 'partner_id' => int64 (id of the considered partner)`,
+		- 'partner_id' => int64 (id of the considered partner)`,
 		func(rs m.ProductProductSet) m.ProductProductData {
 			var code string
 			for _, supplierInfo := range rs.Sellers().Records() {
@@ -270,7 +270,7 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().ComputePartnerRef().DeclareMethod(
 		`ComputePartnerRef computes the product's reference (i.e. "[code] description") based on the context:
-- 'partner_id' => int64 (id of the considered partner)`,
+		- 'partner_id' => int64 (id of the considered partner)`,
 		func(rs m.ProductProductSet) m.ProductProductData {
 			var code, productName string
 			for _, supplierInfo := range rs.Sellers().Records() {
@@ -411,10 +411,11 @@ base price on purchase orders. Expressed in the default unit of measure of the p
 
 	h.ProductProduct().Methods().Copy().Extend("",
 		func(rs m.ProductProductSet, overrides m.ProductProductData) m.ProductProductSet {
-			if rs.Env().Context().HasKey("variant") {
+			switch {
+			case rs.Env().Context().HasKey("variant"):
 				// if we copy a variant or create one, we keep the same template
 				overrides.SetProductTmpl(rs.ProductTmpl())
-			} else if !overrides.HasName() {
+			case !overrides.HasName():
 				overrides.SetName(rs.Name())
 			}
 			return rs.Super().Copy(overrides)

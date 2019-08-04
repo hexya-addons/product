@@ -14,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	tests.RunTests(m, "product")
+	tests.RunTests(m, "product", nil)
 }
 
 type productTestData struct {

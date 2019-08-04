@@ -32,10 +32,9 @@ func init() {
 		"Items": models.One2ManyField{String: "Pricelist Items", RelationModel: h.ProductPricelistItem(),
 			ReverseFK: "Pricelist", JSON: "item_ids", Copy: true,
 			Default: func(env models.Environment) interface{} {
-				listItems := h.ProductPricelistItem().NewSet(env)
-				values := listItems.DefaultGet()
-				values.SetComputePrice("formula")
-				return listItems.Create(values)
+				values := h.ProductPricelistItem().NewData().
+					SetComputePrice("formula")
+				return h.ProductPricelistItem().Create(env, values)
 			}},
 		"Currency": models.Many2OneField{RelationModel: h.Currency(),
 			Default: func(env models.Environment) interface{} {
